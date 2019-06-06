@@ -3,9 +3,9 @@ import models.Extension
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import utils.absolutePath
-import utils.createConfiguration
-import utils.createExtension
+import components.absolutePath
+import components.createConfiguration
+import components.createExtension
 
 class StringCare : Plugin<Project> {
 

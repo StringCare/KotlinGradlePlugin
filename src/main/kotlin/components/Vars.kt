@@ -1,4 +1,4 @@
-package utils
+package components
 
 internal const val extensionName = "stringcare"
 internal const val wrapperOsX = "./gradlew"

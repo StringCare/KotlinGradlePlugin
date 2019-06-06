@@ -1,6 +1,6 @@
 import models.extractFingerprint
 import org.junit.Test
-import utils.*
+import components.*
 
 
 class SCTest {

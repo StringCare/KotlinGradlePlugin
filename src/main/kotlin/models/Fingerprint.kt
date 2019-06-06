@@ -1,8 +1,8 @@
 package models
 
-import utils.PrintUtils
-import utils.runCommand
-import utils.signingReportTask
+import components.PrintUtils
+import components.runCommand
+import components.signingReportTask
 
 private class Fingerprint {
 

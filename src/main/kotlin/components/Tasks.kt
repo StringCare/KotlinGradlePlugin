@@ -1,4 +1,4 @@
-package utils
+package components
 
 import models.Os
 import models.getOs

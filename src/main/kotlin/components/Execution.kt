@@ -1,4 +1,4 @@
-package utils
+package components
 
 import groovy.json.StringEscapeUtils
 import models.Configuration
