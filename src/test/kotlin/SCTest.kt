@@ -1,22 +1,12 @@
 import org.junit.Test
+import utils.*
 
 
 class SCTest {
 
     private val logger by logger()
 
-    @Test
-    fun `terminal`() {
-        val expectedMessage = "string_test"
-        val response = Executor.execute("echo $expectedMessage")
-        assert(response.contains(expectedMessage))
-    }
-
-
-    @Test
-    fun `gradlew signingReport`() {
-        val signingReport = Executor.execute(
-            """
+    private val signingReportTask = """
             rm -rf KotlinSample &&
             git clone https://github.com/StringCare/KotlinSample.git &&
             cd KotlinSample &&
@@ -24,8 +14,20 @@ class SCTest {
             ./gradlew build &&
             ./gradlew signingReport
         """.trimIndent()
-        )
-        assert(signingReport.contains("SHA1") && signingReport.contains("BUILD SUCCESSFUL"))
+
+    @Test
+    fun `terminal verification`() {
+        "echo $extensionName".run { command, result ->
+            assert(command.contains(result.removeNewLines()))
+        }
+    }
+
+
+    @Test
+    fun `gradlew signingReport`() {
+        signingReportTask.run { _, report ->
+            assert(report.contains("SHA1") && report.contains("BUILD SUCCESSFUL"))
+        }
     }
 
 }
