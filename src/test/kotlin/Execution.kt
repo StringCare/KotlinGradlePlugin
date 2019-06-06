@@ -1,14 +1,8 @@
-import org.awaitility.kotlin.await
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
-fun execute(command: String, processing: (line: String) -> Unit = {}) {
-    val inputStream = Runtime.getRuntime().exec(command).inputStream
-    val isr = InputStreamReader(inputStream)
-    val buff = BufferedReader(isr)
-    while (true) {
-        val line = buff.readLine() ?: break
-        processing(line)
-    }
-
+fun <R : Any> R.logger(): Lazy<Logger> {
+    return lazy { LoggerFactory.getLogger(this.javaClass) }
 }
+
+fun Process.outputString(): String = this.inputStream.bufferedReader().use { it.readText() }

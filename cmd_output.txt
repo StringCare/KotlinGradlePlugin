@@ -1,0 +1,51 @@
+
+> Task :app:lint
+Ran lint on variant release: 4 issues found
+Ran lint on variant debug: 4 issues found
+Wrote HTML report to file:///Users/efrainespada/Documents/Github/KotlinGradlePlugin/KotlinSample/app/build/reports/lint-results.html
+Wrote XML report to file:///Users/efrainespada/Documents/Github/KotlinGradlePlugin/KotlinSample/app/build/reports/lint-results.xml
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 6.0.
+Use '--warning-mode all' to show the individual deprecation warnings.
+See https://docs.gradle.org/5.1.1/userguide/command_line_interface.html#sec:command_line_warnings
+
+BUILD SUCCESSFUL in 47s
+60 actionable tasks: 60 executed
+
+> Task :app:signingReport
+Variant: releaseUnitTest
+Config: none
+----------
+Variant: debug
+Config: debug
+Store: /Users/efrainespada/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: 91:08:27:83:D9:A6:F9:18:3A:2C:A6:C0:E9:B3:C5:F7
+SHA1: A0:EA:C0:43:23:55:9B:C9:6B:A8:50:47:F5:17:B3:A3:52:C9:A4:3E
+SHA-256: D9:36:D9:BE:5C:E1:D9:7E:75:33:F5:DB:CD:C6:AF:6B:3B:2E:D7:AD:77:5D:B2:92:8C:7D:1E:CE:DB:6B:19:FB
+Valid until: Tuesday, June 30, 2048
+----------
+Variant: release
+Config: none
+----------
+Variant: debugUnitTest
+Config: debug
+Store: /Users/efrainespada/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: 91:08:27:83:D9:A6:F9:18:3A:2C:A6:C0:E9:B3:C5:F7
+SHA1: A0:EA:C0:43:23:55:9B:C9:6B:A8:50:47:F5:17:B3:A3:52:C9:A4:3E
+SHA-256: D9:36:D9:BE:5C:E1:D9:7E:75:33:F5:DB:CD:C6:AF:6B:3B:2E:D7:AD:77:5D:B2:92:8C:7D:1E:CE:DB:6B:19:FB
+Valid until: Tuesday, June 30, 2048
+----------
+Variant: debugAndroidTest
+Config: debug
+Store: /Users/efrainespada/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: 91:08:27:83:D9:A6:F9:18:3A:2C:A6:C0:E9:B3:C5:F7
+SHA1: A0:EA:C0:43:23:55:9B:C9:6B:A8:50:47:F5:17:B3:A3:52:C9:A4:3E
+SHA-256: D9:36:D9:BE:5C:E1:D9:7E:75:33:F5:DB:CD:C6:AF:6B:3B:2E:D7:AD:77:5D:B2:92:8C:7D:1E:CE:DB:6B:19:FB
+Valid until: Tuesday, June 30, 2048
+----------
+
+BUILD SUCCESSFUL in 0s
+1 actionable task: 1 executed
