@@ -7,11 +7,9 @@ import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.BufferedReader
 import java.io.IOException
-import java.io.InputStreamReader
 
-fun Project.absolutePath(): String = this.file(wrapper).absolutePath.replace(wrapper, emptyChar)
+fun Project.absolutePath(): String = this.file(wrapperOsX).absolutePath.replace(wrapperOsX, emptyChar)
 fun Project.createExtension(): Extension = this.extensions.create(extensionName, Extension::class.java)
 fun Project.createConfiguration(): NamedDomainObjectContainer<Configuration> =
     this.container<Configuration>(Configuration::class.java)
@@ -40,8 +38,10 @@ fun <R : Any> R.logger(): Lazy<Logger> {
     return lazy { LoggerFactory.getLogger(this.javaClass) }
 }
 
-fun String.run(runner: (command: String, result: String) -> Unit) {
-    runner(this, execute(this))
+fun String.runCommand(runner: (command: String, result: String) -> Unit = { _, _ -> }): String {
+    val result = execute(this)
+    runner(this, result)
+    return result
 }
 
 fun String.escape(): String = Regex.escape(this)
