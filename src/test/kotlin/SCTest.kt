@@ -1,18 +1,23 @@
+import components.*
 import models.extractFingerprint
 import org.junit.Test
-import components.*
 
 
 class SCTest {
 
     private val logger by logger()
 
-    private val signingReportTask = """
+    private val prepareTask = """
             rm -rf KotlinSample &&
             git clone https://github.com/StringCare/KotlinSample.git &&
-            cd KotlinSample &&
-            echo "sdk.dir=/Users/efrainespada/Library/Android/sdk" > local.properties &&
-            ./gradlew signingReport
+            cd KotlinSample
+        """.trimIndent()
+
+    // gradlew task needs export ANDROID_SDK_ROOT=/Users/efrainespada/Library/Android/sdk
+    // echo "sdk.dir=${System.getenv("ANDROID_SDK_ROOT")}" > local.properties &&
+    private val signingReportTask = """
+            $prepareTask &&
+            ${signingReportTask()}
         """.trimIndent()
 
     @Test
@@ -32,9 +37,16 @@ class SCTest {
     @Test
     fun `fingerprint extraction`() {
         signingReportTask.runCommand { _, report ->
-            val key = report.extractFingerprint()
-            assert(key.split(":").size == 20)
+            assert(report.extractFingerprint().split(":").size == 20)
         }
+    }
+
+    @Test
+    fun `locate string files for default configuration`() {
+        prepareTask.runCommand { _, _ ->
+            assert(locateFiles("KotlinSample", defaultConfig()).isNotEmpty())
+        }
+
     }
 
 }
