@@ -1,4 +1,4 @@
-package models
+package components
 
 enum class Os {
     WINDOWS,

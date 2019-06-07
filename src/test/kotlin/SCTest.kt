@@ -1,5 +1,4 @@
 import components.*
-import models.extractFingerprint
 import org.junit.Test
 
 
@@ -7,10 +6,11 @@ class SCTest {
 
     private val logger by logger()
 
+    private val projectName = "KotlinSample"
     private val prepareTask = """
-            rm -rf KotlinSample &&
-            git clone https://github.com/StringCare/KotlinSample.git &&
-            cd KotlinSample
+            rm -rf $projectName &&
+            git clone https://github.com/StringCare/$projectName.git &&
+            cd $projectName
         """.trimIndent()
 
     // gradlew task needs export ANDROID_SDK_ROOT=/Users/efrainespada/Library/Android/sdk
@@ -44,9 +44,45 @@ class SCTest {
     @Test
     fun `locate string files for default configuration`() {
         prepareTask.runCommand { _, _ ->
-            assert(locateFiles("KotlinSample", defaultConfig()).isNotEmpty())
+            assert(locateFiles(projectName, defaultConfig()).isNotEmpty())
         }
+    }
 
+    @Test
+    fun `backup string files`() {
+        prepareTask.runCommand { _, _ ->
+            assert(backupFiles(projectName, defaultConfig()).isNotEmpty())
+        }
+    }
+
+    @Test
+    fun `restore string files`() {
+        prepareTask.runCommand { _, _ ->
+            assert(backupFiles(projectName, defaultConfig()).isNotEmpty())
+            assert(restoreFiles(projectName).isNotEmpty())
+        }
+    }
+
+    @Test
+    fun `xml parsing`() {
+        prepareTask.runCommand { _, _ ->
+            val files = backupFiles(projectName, defaultConfig())
+            files.forEach {
+                assert(parseXML(it, "app", true).isNotEmpty())
+            }
+        }
+    }
+
+
+    @Test
+    fun `obfuscate string files`() {
+        prepareTask.runCommand { _, _ ->
+            val files = backupFiles(projectName, defaultConfig())
+            files.forEach {
+                val entities = parseXML(it, "app", true)
+
+            }
+        }
     }
 
 }
