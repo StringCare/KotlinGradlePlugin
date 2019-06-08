@@ -95,3 +95,15 @@ fun File.restore(projectPath: String): File {
     return restore
 }
 
+fun ByteArray.toReadableString(): String {
+    val builder = StringBuilder()
+    this.forEachIndexed { index, byte ->
+        if (index == this.size - 1) {
+            builder.append(byte)
+        } else {
+            builder.append("$byte, ")
+        }
+    }
+    return builder.toString()
+}
+

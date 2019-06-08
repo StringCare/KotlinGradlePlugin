@@ -25,3 +25,8 @@ compileKotlin {
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
+
+processResources {
+    from 'src/main/kotlin/components/jni'
+    include '*.dylib', '*.dll'
+}

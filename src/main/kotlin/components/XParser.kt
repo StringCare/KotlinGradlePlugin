@@ -4,7 +4,6 @@ import models.Configuration
 import models.ResourceFile
 import models.SAttribute
 import models.StringEntity
-import org.xml.sax.InputSource
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
@@ -59,5 +58,16 @@ fun parseXML(file: File, module: String, debug: Boolean): List<StringEntity> {
         entities.add(StringEntity(name, attributes, node.firstChild.nodeValue))
     }
     return entities
+}
+
+fun obfuscate(mainModule: String, key: String, entity: StringEntity): StringEntity {
+    val obfuscation = Stark.obfuscate(mainModule, key, entity.value.toByteArray()).toReadableString()
+    return StringEntity(entity.name, entity.attributes, obfuscation)
+}
+
+fun reveal(mainModule: String, key: String, entity: StringEntity): StringEntity {
+    val arr: ByteArray = entity.value.split(", ").map { it.toInt().toByte() }.toByteArray()
+    val original = String(Stark.reveal(mainModule, key, arr))
+    return StringEntity(entity.name, entity.attributes, original)
 }
 

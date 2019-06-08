@@ -1,5 +1,7 @@
 import components.*
+import org.junit.Before
 import org.junit.Test
+import java.io.File
 
 
 class SCTest {
@@ -7,6 +9,13 @@ class SCTest {
     private val logger by logger()
 
     private val projectName = "KotlinSample"
+    private val mainModuleTest = "app"
+
+    private val librarySetupTask = """
+            cp src/main/kotlin/components/jni/$osxLib out/production/classes/$osxLib
+            cp src/main/kotlin/components/jni/$winLib out/production/classes/$winLib
+        """.trimIndent()
+
     private val prepareTask = """
             rm -rf $projectName &&
             git clone https://github.com/StringCare/$projectName.git &&
@@ -19,6 +28,11 @@ class SCTest {
             $prepareTask &&
             ${signingReportTask()}
         """.trimIndent()
+
+    @Before
+    fun setup() {
+        librarySetupTask.runCommand()
+    }
 
     @Test
     fun `terminal verification`() {
@@ -68,7 +82,7 @@ class SCTest {
         prepareTask.runCommand { _, _ ->
             val files = backupFiles(projectName, defaultConfig())
             files.forEach {
-                assert(parseXML(it, "app", true).isNotEmpty())
+                assert(parseXML(it, mainModuleTest, true).isNotEmpty())
             }
         }
     }
@@ -76,11 +90,25 @@ class SCTest {
 
     @Test
     fun `obfuscate string files`() {
-        prepareTask.runCommand { _, _ ->
+        signingReportTask.runCommand { _, report ->
             val files = backupFiles(projectName, defaultConfig())
-            files.forEach {
-                val entities = parseXML(it, "app", true)
+            files.forEach { file ->
+                val entities = parseXML(file, mainModuleTest, true)
+                entities.forEach { entity ->
+                    val obfuscated = obfuscate(
+                        "$projectName${File.separator}$mainModuleTest",
+                        report.extractFingerprint(),
+                        entity)
+                    assert(obfuscated.value != entity.value)
 
+                    val original = reveal(
+                        "$projectName${File.separator}$mainModuleTest",
+                        report.extractFingerprint(),
+                        obfuscated)
+
+                    assert(original.value == entity.value)
+
+                }
             }
         }
     }
