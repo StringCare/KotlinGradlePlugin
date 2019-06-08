@@ -35,42 +35,42 @@ class SCTest {
     }
 
     @Test
-    fun `terminal verification`() {
+    fun `1 - terminal verification`() {
         "echo $extensionName".runCommand { command, result ->
             assert(command.contains(result.removeNewLines()))
         }
     }
 
     @Test
-    fun `gradlew signingReport`() {
+    fun `2 - gradlew signingReport`() {
         signingReportTask.runCommand { _, report ->
             assert(report.contains("SHA1") && report.contains("BUILD SUCCESSFUL"))
         }
     }
 
     @Test
-    fun `fingerprint extraction`() {
+    fun `3 - fingerprint extraction`() {
         signingReportTask.runCommand { _, report ->
             assert(report.extractFingerprint().split(":").size == 20)
         }
     }
 
     @Test
-    fun `locate string files for default configuration`() {
+    fun `4 - locate string files for default configuration`() {
         prepareTask.runCommand { _, _ ->
             assert(locateFiles(projectName, defaultConfig()).isNotEmpty())
         }
     }
 
     @Test
-    fun `backup string files`() {
+    fun `5 - backup string files`() {
         prepareTask.runCommand { _, _ ->
             assert(backupFiles(projectName, defaultConfig()).isNotEmpty())
         }
     }
 
     @Test
-    fun `restore string files`() {
+    fun `6 - restore string files`() {
         prepareTask.runCommand { _, _ ->
             assert(backupFiles(projectName, defaultConfig()).isNotEmpty())
             assert(restoreFiles(projectName).isNotEmpty())
@@ -78,7 +78,7 @@ class SCTest {
     }
 
     @Test
-    fun `xml parsing`() {
+    fun `7 - xml parsing`() {
         prepareTask.runCommand { _, _ ->
             val files = backupFiles(projectName, defaultConfig())
             files.forEach {
@@ -89,7 +89,7 @@ class SCTest {
 
 
     @Test
-    fun `obfuscate string files`() {
+    fun `8 - obfuscate string values`() {
         signingReportTask.runCommand { _, report ->
             val files = backupFiles(projectName, defaultConfig())
             files.forEach { file ->
@@ -98,13 +98,33 @@ class SCTest {
                     val obfuscated = obfuscate(
                         "$projectName${File.separator}$mainModuleTest",
                         report.extractFingerprint(),
-                        entity)
+                        entity
+                    )
+                    assert(obfuscated.value != entity.value)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `9 - obfuscate and reveal string values`() {
+        signingReportTask.runCommand { _, report ->
+            val files = backupFiles(projectName, defaultConfig())
+            files.forEach { file ->
+                val entities = parseXML(file, mainModuleTest, true)
+                entities.forEach { entity ->
+                    val obfuscated = obfuscate(
+                        "$projectName${File.separator}$mainModuleTest",
+                        report.extractFingerprint(),
+                        entity
+                    )
                     assert(obfuscated.value != entity.value)
 
                     val original = reveal(
                         "$projectName${File.separator}$mainModuleTest",
                         report.extractFingerprint(),
-                        obfuscated)
+                        obfuscated
+                    )
 
                     assert(original.value == entity.value)
 
