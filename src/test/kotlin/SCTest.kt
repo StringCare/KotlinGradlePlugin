@@ -1,5 +1,4 @@
 import components.*
-import models.StringEntity
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -9,6 +8,7 @@ class SCTest {
 
     private val logger by logger()
 
+    private val buildSuccess = "KotlinSample"
     private val projectName = "KotlinSample"
     private val mainModule = "app"
     private val mainModuleTest = "$projectName${File.separator}$mainModule"
@@ -24,6 +24,11 @@ class SCTest {
             cd $projectName
         """.trimIndent()
 
+    private val buildTask = """
+        cd $projectName
+        ${gradleWrapper()} build
+        """.trimIndent()
+
     // gradlew task needs export ANDROID_SDK_ROOT=/Users/efrainespada/Library/Android/sdk
     // echo "sdk.dir=${System.getenv("ANDROID_SDK_ROOT")}" > local.properties &&
     private val signingReportTask = """
@@ -37,42 +42,42 @@ class SCTest {
     }
 
     @Test
-    fun `1 - terminal verification`() {
+    fun `01 - (PLUGIN) terminal verification`() {
         "echo $extensionName".runCommand { command, result ->
             assert(command.contains(result.removeNewLines()))
         }
     }
 
     @Test
-    fun `2 - gradlew signingReport`() {
+    fun `02 - (PLUGIN) gradlew signingReport`() {
         signingReportTask.runCommand { _, report ->
             assert(report.contains("SHA1") && report.contains("BUILD SUCCESSFUL"))
         }
     }
 
     @Test
-    fun `3 - fingerprint extraction`() {
+    fun `03 - (PLUGIN) fingerprint extraction`() {
         signingReportTask.runCommand { _, report ->
             assert(report.extractFingerprint().split(":").size == 20)
         }
     }
 
     @Test
-    fun `4 - locate string files for default configuration`() {
+    fun `04 - (PLUGIN) locate string files for default configuration`() {
         prepareTask.runCommand { _, _ ->
             assert(locateFiles(projectName, defaultConfig()).isNotEmpty())
         }
     }
 
     @Test
-    fun `5 - backup string files`() {
+    fun `05 - (PLUGIN) backup string files`() {
         prepareTask.runCommand { _, _ ->
             assert(backupFiles(projectName, defaultConfig()).isNotEmpty())
         }
     }
 
     @Test
-    fun `6 - restore string files`() {
+    fun `06 - (PLUGIN) restore string files`() {
         prepareTask.runCommand { _, _ ->
             assert(backupFiles(projectName, defaultConfig()).isNotEmpty())
             assert(restoreFiles(projectName).isNotEmpty())
@@ -80,7 +85,7 @@ class SCTest {
     }
 
     @Test
-    fun `7 - xml parsing`() {
+    fun `07 - (PLUGIN) xml parsing`() {
         prepareTask.runCommand { _, _ ->
             val files = locateFiles(projectName, defaultConfig())
             files.forEach {
@@ -91,7 +96,7 @@ class SCTest {
 
 
     @Test
-    fun `8 - obfuscate string values`() {
+    fun `08 - (PLUGIN) obfuscate string values`() {
         signingReportTask.runCommand { _, report ->
             val files = locateFiles(projectName, defaultConfig())
             files.forEach { file ->
@@ -109,7 +114,7 @@ class SCTest {
     }
 
     @Test
-    fun `9 - obfuscate and reveal string values`() {
+    fun `09 - (PLUGIN) obfuscate and reveal string values`() {
         signingReportTask.runCommand { _, report ->
             val files = locateFiles(projectName, defaultConfig())
             files.forEach { file ->
@@ -136,16 +141,38 @@ class SCTest {
     }
 
     @Test
-    fun `10 - obfuscate xml`() {
+    fun `10 - (PLUGIN) obfuscate xml`() {
         signingReportTask.runCommand { _, report ->
             val files = locateFiles(projectName, defaultConfig())
             files.forEach { file ->
+                val entities = parseXML(file.file, mainModuleTest, true)
+                assert(entities.isNotEmpty())
                 modifyXML(file.file, mainModuleTest, report.extractFingerprint(), true)
             }
             val filesObfuscated = locateFiles(projectName, defaultConfig())
             filesObfuscated.forEach { file ->
                 val entities = parseXML(file.file, mainModuleTest, true)
                 assert(entities.isEmpty())
+            }
+        }
+    }
+
+    @Test
+    fun `11 - (ANDROID COMPILATION) obfuscate xml and build (not real workflow)`() {
+        signingReportTask.runCommand { _, report ->
+            val files = locateFiles(projectName, defaultConfig())
+            files.forEach { file ->
+                val entities = parseXML(file.file, mainModuleTest, true)
+                assert(entities.isNotEmpty())
+                modifyXML(file.file, mainModuleTest, report.extractFingerprint(), true)
+            }
+            val filesObfuscated = locateFiles(projectName, defaultConfig())
+            filesObfuscated.forEach { file ->
+                val entities = parseXML(file.file, mainModuleTest, true)
+                assert(entities.isEmpty())
+            }
+            buildTask.runCommand { _, androidReport ->
+                assert(androidReport.contains("BUILD SUCCESSFUL"))
             }
         }
     }
