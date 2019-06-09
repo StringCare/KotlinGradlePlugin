@@ -6,7 +6,13 @@ import models.Extension
 import models.ResourceFile
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
-import java.io.File
+import org.w3c.dom.Document
+import org.xml.sax.InputSource
+import java.io.*
+import javax.xml.parsers.DocumentBuilderFactory
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.dom.DOMSource
+import javax.xml.transform.stream.StreamResult
 
 fun String.runCommand(runner: (command: String, result: String) -> Unit = { _, _ -> }): String {
     val result = execute(this)
@@ -22,7 +28,8 @@ fun File.validForConfiguration(configuration: Configuration): Boolean {
     var valid = false
     configuration.srcFolders.forEach { folder ->
         if (this.absolutePath.contains("/$folder/".replace("//", "/"))
-            && !this.absolutePath.contains("/$resourceBackup/")) {
+            && !this.absolutePath.contains("/$resourceBackup/")
+        ) {
             valid = true
         }
     }
@@ -82,13 +89,13 @@ fun ResourceFile.backup(projectPath: String): File {
                 .replace("${File.separator}${File.separator}", File.separator)
 
     val backupFile = File(cleanPath)
-    this.file.copyTo(backupFile)
+    this.file.copyTo(backupFile, true)
     return backupFile
 }
 
 fun File.restore(projectPath: String): File {
     val cleanPath = "$projectPath${File.separator}${this.absolutePath.split(resourceBackup)[1]}"
-                .replace("${File.separator}${File.separator}", File.separator)
+        .replace("${File.separator}${File.separator}", File.separator)
 
     val restore = File(cleanPath)
     this.copyTo(restore, true)
@@ -106,4 +113,35 @@ fun ByteArray.toReadableString(): String {
     }
     return builder.toString()
 }
+
+fun File.getXML(): Document {
+    val inputStream = FileInputStream(this)
+    val reader = InputStreamReader(inputStream, "UTF-8")
+    val inputSource = InputSource(reader)
+    inputSource.encoding = "UTF-8"
+
+    val builderFactory = DocumentBuilderFactory.newInstance()
+    val docBuilder = builderFactory.newDocumentBuilder()
+    return docBuilder.parse(inputSource)
+}
+
+fun File.updateXML(document: Document) {
+    val output = StringWriter()
+    val transformer = TransformerFactory.newInstance().newTransformer()
+    transformer.transform(DOMSource(document), StreamResult(output))
+    val xml = output.toString()
+    FileWriter(this.absolutePath).use { it.write(xml) }
+}
+
+fun File.removeHiddenAttributes() {
+    val content = this.getContent()
+        .replace("hidden=\"true\"", "")
+        .replace("hidden=\"false\"", "")
+        .replace("hidden", "")
+    FileWriter(this.absolutePath).use { it.write(content) }
+    updateXML(this.getXML())
+}
+
+
+fun File.getContent() = this.inputStream().readBytes().toString(Charsets.UTF_8)
 

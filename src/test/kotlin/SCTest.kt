@@ -1,4 +1,5 @@
 import components.*
+import models.StringEntity
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -9,7 +10,8 @@ class SCTest {
     private val logger by logger()
 
     private val projectName = "KotlinSample"
-    private val mainModuleTest = "app"
+    private val mainModule = "app"
+    private val mainModuleTest = "$projectName${File.separator}$mainModule"
 
     private val librarySetupTask = """
             cp src/main/kotlin/components/jni/$osxLib out/production/classes/$osxLib
@@ -80,9 +82,9 @@ class SCTest {
     @Test
     fun `7 - xml parsing`() {
         prepareTask.runCommand { _, _ ->
-            val files = backupFiles(projectName, defaultConfig())
+            val files = locateFiles(projectName, defaultConfig())
             files.forEach {
-                assert(parseXML(it, mainModuleTest, true).isNotEmpty())
+                assert(parseXML(it.file, mainModuleTest, true).isNotEmpty())
             }
         }
     }
@@ -91,12 +93,12 @@ class SCTest {
     @Test
     fun `8 - obfuscate string values`() {
         signingReportTask.runCommand { _, report ->
-            val files = backupFiles(projectName, defaultConfig())
+            val files = locateFiles(projectName, defaultConfig())
             files.forEach { file ->
-                val entities = parseXML(file, mainModuleTest, true)
+                val entities = parseXML(file.file, mainModuleTest, true)
                 entities.forEach { entity ->
                     val obfuscated = obfuscate(
-                        "$projectName${File.separator}$mainModuleTest",
+                        mainModuleTest,
                         report.extractFingerprint(),
                         entity
                     )
@@ -109,19 +111,19 @@ class SCTest {
     @Test
     fun `9 - obfuscate and reveal string values`() {
         signingReportTask.runCommand { _, report ->
-            val files = backupFiles(projectName, defaultConfig())
+            val files = locateFiles(projectName, defaultConfig())
             files.forEach { file ->
-                val entities = parseXML(file, mainModuleTest, true)
+                val entities = parseXML(file.file, mainModuleTest, true)
                 entities.forEach { entity ->
                     val obfuscated = obfuscate(
-                        "$projectName${File.separator}$mainModuleTest",
+                        mainModuleTest,
                         report.extractFingerprint(),
                         entity
                     )
                     assert(obfuscated.value != entity.value)
 
                     val original = reveal(
-                        "$projectName${File.separator}$mainModuleTest",
+                        mainModuleTest,
                         report.extractFingerprint(),
                         obfuscated
                     )
@@ -129,6 +131,21 @@ class SCTest {
                     assert(original.value == entity.value)
 
                 }
+            }
+        }
+    }
+
+    @Test
+    fun `10 - obfuscate xml`() {
+        signingReportTask.runCommand { _, report ->
+            val files = locateFiles(projectName, defaultConfig())
+            files.forEach { file ->
+                modifyXML(file.file, mainModuleTest, report.extractFingerprint(), true)
+            }
+            val filesObfuscated = locateFiles(projectName, defaultConfig())
+            filesObfuscated.forEach { file ->
+                val entities = parseXML(file.file, mainModuleTest, true)
+                assert(entities.isEmpty())
             }
         }
     }
