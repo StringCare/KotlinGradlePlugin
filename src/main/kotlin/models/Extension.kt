@@ -1,3 +1,9 @@
 package models
 
-data class Extension(val debug: Boolean, val main_module: String)
+import org.gradle.api.NamedDomainObjectContainer
+
+data class Extension(
+    val debug: Boolean = false,
+    val main_module: String = "app",
+    var modules: NamedDomainObjectContainer<Configuration>
+)

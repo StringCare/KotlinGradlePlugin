@@ -80,7 +80,7 @@ class SCTest {
     fun `06 - (PLUGIN) restore string files`() {
         prepareTask.runCommand { _, _ ->
             assert(backupFiles(projectName, defaultConfig()).isNotEmpty())
-            assert(restoreFiles(projectName).isNotEmpty())
+            assert(restoreFiles(projectName, mainModule).isNotEmpty())
         }
     }
 
@@ -89,7 +89,7 @@ class SCTest {
         prepareTask.runCommand { _, _ ->
             val files = locateFiles(projectName, defaultConfig())
             files.forEach {
-                assert(parseXML(it.file, mainModuleTest, true).isNotEmpty())
+                assert(parseXML(it.file, true).isNotEmpty())
             }
         }
     }
@@ -100,7 +100,7 @@ class SCTest {
         signingReportTask.runCommand { _, report ->
             val files = locateFiles(projectName, defaultConfig())
             files.forEach { file ->
-                val entities = parseXML(file.file, mainModuleTest, true)
+                val entities = parseXML(file.file, true)
                 entities.forEach { entity ->
                     val obfuscated = obfuscate(
                         mainModuleTest,
@@ -118,7 +118,7 @@ class SCTest {
         signingReportTask.runCommand { _, report ->
             val files = locateFiles(projectName, defaultConfig())
             files.forEach { file ->
-                val entities = parseXML(file.file, mainModuleTest, true)
+                val entities = parseXML(file.file, true)
                 entities.forEach { entity ->
                     val obfuscated = obfuscate(
                         mainModuleTest,
@@ -145,13 +145,13 @@ class SCTest {
         signingReportTask.runCommand { _, report ->
             val files = locateFiles(projectName, defaultConfig())
             files.forEach { file ->
-                val entities = parseXML(file.file, mainModuleTest, true)
+                val entities = parseXML(file.file, true)
                 assert(entities.isNotEmpty())
                 modifyXML(file.file, mainModuleTest, report.extractFingerprint(), true)
             }
             val filesObfuscated = locateFiles(projectName, defaultConfig())
             filesObfuscated.forEach { file ->
-                val entities = parseXML(file.file, mainModuleTest, true)
+                val entities = parseXML(file.file, true)
                 assert(entities.isEmpty())
             }
         }
@@ -162,13 +162,13 @@ class SCTest {
         signingReportTask.runCommand { _, report ->
             val files = locateFiles(projectName, defaultConfig())
             files.forEach { file ->
-                val entities = parseXML(file.file, mainModuleTest, true)
+                val entities = parseXML(file.file, true)
                 assert(entities.isNotEmpty())
                 modifyXML(file.file, mainModuleTest, report.extractFingerprint(), true)
             }
             val filesObfuscated = locateFiles(projectName, defaultConfig())
             filesObfuscated.forEach { file ->
-                val entities = parseXML(file.file, mainModuleTest, true)
+                val entities = parseXML(file.file, true)
                 assert(entities.isEmpty())
             }
             buildTask.runCommand { _, androidReport ->

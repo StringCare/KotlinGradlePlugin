@@ -20,8 +20,8 @@ fun backupFiles(projectPath: String, configuration: Configuration): List<File> {
     return resourceFiles
 }
 
-fun restoreFiles(projectPath: String): List<File> {
-    val resourceFiles = File("$projectPath${File.separator}$resourceBackup").walkTopDown().toList()
+fun restoreFiles(projectPath: String, module: String): List<File> {
+    val resourceFiles = File("$projectPath${File.separator}$resourceBackup${File.separator}$module").walkTopDown().toList()
     resourceFiles.filter { file ->
         !file.isDirectory
     }.map {
@@ -30,9 +30,9 @@ fun restoreFiles(projectPath: String): List<File> {
     return resourceFiles
 }
 
-fun parseXML(file: File, module: String, debug: Boolean): List<StringEntity> {
+fun parseXML(file: File, debug: Boolean): List<StringEntity> {
     if (debug) {
-        PrintUtils.print(module, file.getContent(), true)
+        PrintUtils.print(null, file.getContent(), true)
     }
     val entities = mutableListOf<StringEntity>()
 
@@ -62,10 +62,10 @@ fun parseXML(file: File, module: String, debug: Boolean): List<StringEntity> {
     return entities
 }
 
-fun modifyXML(file: File, module: String, key: String, debug: Boolean) {
-    val stringEntities = parseXML(file, module, debug)
+fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean) {
+    val stringEntities = parseXML(file, debug)
     if (debug) {
-        PrintUtils.print(module, file.getContent(), true)
+        PrintUtils.print(null, file.getContent(), true)
     }
 
     val doc = file.getXML()
@@ -76,7 +76,7 @@ fun modifyXML(file: File, module: String, key: String, debug: Boolean) {
             it.tag == "string" && it.index == i
         }
         entity?.let {
-            node.firstChild.nodeValue = obfuscate(module, key, it).value
+            node.firstChild.nodeValue = obfuscate(mainModule, key, it).value
         }
     }
 

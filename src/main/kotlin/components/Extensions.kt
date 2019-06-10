@@ -6,6 +6,7 @@ import models.Extension
 import models.ResourceFile
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.w3c.dom.Document
 import org.xml.sax.InputSource
 import java.io.*
@@ -25,17 +26,21 @@ fun String.unescape(): String = StringEscapeUtils.unescapeJava(this)
 fun String.removeNewLines(): String = this.replace("\n", "")
 
 fun File.validForConfiguration(configuration: Configuration): Boolean {
-    var valid = false
-    configuration.srcFolders.forEach { folder ->
-        if (this.absolutePath.contains("/$folder/".replace("//", "/"))
+    var valid = this.absolutePath.contains("/${configuration.name}/")
             && !this.absolutePath.contains("/$resourceBackup/")
-        ) {
-            valid = true
+    if (valid) {
+        valid = false
+        configuration.srcFolders?.forEach { folder ->
+            if (this.absolutePath.contains("/$folder/".replace("//", "/"))
+                && !this.absolutePath.contains("/$resourceBackup/")
+            ) {
+                valid = true
+            }
         }
     }
     if (valid) {
         valid = false
-        configuration.stringFiles.forEach { file ->
+        configuration.stringFiles?.forEach { file ->
             if (this.absolutePath.contains("/$file".replace("//", "/"))) {
                 valid = true
             }
@@ -48,7 +53,7 @@ fun File.resourceFile(configuration: Configuration): ResourceFile? {
     var sourceFolder = ""
     var validFile: File? = null
     var valid = false
-    configuration.srcFolders.forEach { folder ->
+    configuration.srcFolders?.forEach { folder ->
         if (this.absolutePath.contains("/$folder/".replace("//", "/"))
             && !this.absolutePath.contains("/$resourceBackup/")
         ) {
@@ -58,14 +63,14 @@ fun File.resourceFile(configuration: Configuration): ResourceFile? {
     }
     if (valid) {
         valid = false
-        configuration.stringFiles.forEach { file ->
+        configuration.stringFiles?.forEach { file ->
             if (this.absolutePath.contains("/$file".replace("//", "/"))) {
                 valid = true
                 validFile = this
             }
         }
     }
-    return if (valid) ResourceFile(validFile!!, sourceFolder, configuration.name) else null
+    return if (valid) ResourceFile(validFile!!, sourceFolder, configuration.name!!) else null
 }
 
 fun Project.absolutePath(): String = this.file(wrapperWindows).absolutePath.replace(
@@ -73,9 +78,11 @@ fun Project.absolutePath(): String = this.file(wrapperWindows).absolutePath.repl
     emptyChar
 )
 
-fun Project.createExtension(): Extension = this.extensions.create(extensionName, Extension::class.java)
-fun Project.createConfiguration(): NamedDomainObjectContainer<Configuration> =
-    this.container<Configuration>(Configuration::class.java)
+fun Project.createExtension(): Extension {
+    val extension = this.extensions.create(extensionName, Extension::class.java)
+    extension.modules = this.container<Configuration>(Configuration::class.java)
+    return extension
+}
 
 fun Process.outputString() = this.inputStream.bufferedReader().use { it.readText() }
 
@@ -144,4 +151,32 @@ fun File.removeHiddenAttributes() {
 
 
 fun File.getContent() = this.inputStream().readBytes().toString(Charsets.UTF_8)
+
+fun Task.getModuleName(): String? {
+    val path = this.project.path
+    return if (path.isEmpty()) null else path.split(":")[path.split(":").size - 1]
+}
+
+fun Task.dataFound(): Boolean = this.name.contains(pre)
+        && this.name.contains(build)
+        && this.name != "$pre$build"
+        && !this.name.contains(test)
+
+fun Task.onMergeResourcesStarts(): Boolean = this.name.contains(merge)
+        && this.name.contains(resources)
+        && !this.name.contains(test)
+
+fun Task.onMergeResourcesFinish(): Boolean = this.name.contains(merge)
+        && this.name.contains(resources)
+        && !this.name.contains(test)
+
+fun Task.dataFoundVariant(): String = this.name.substring(pre.length)
+    .substring(0, this.name.substring(pre.length).length - build.length)
+
+fun Task.onMergeResourcesStartsVariant(): String = this.name.substring(merge.length)
+    .substring(0, this.name.substring(merge.length).length - resources.length)
+
+fun Task.onMergeResourcesFinishVariant(): String = this.name.substring(merge.length)
+    .substring(0, this.name.substring(merge.length).length - resources.length)
+
 

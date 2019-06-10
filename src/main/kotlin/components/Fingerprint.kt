@@ -75,8 +75,10 @@ private class Fingerprint {
 /**
  * Gets the signing report trace and extracts the fingerprint
  */
-fun fingerPrint(module: String, variant: String, debug: Boolean): String {
-    return signingReportTask().runCommand().extractFingerprint(module, variant, debug)
+fun fingerPrint(module: String, variant: String, debug: Boolean, keyFound: (key: String) -> Unit) {
+    signingReportTask().runCommand { _, report ->
+        keyFound(report.extractFingerprint(module, variant, debug))
+    }
 }
 
 /**
