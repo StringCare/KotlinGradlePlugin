@@ -21,16 +21,20 @@ class StringCare : Plugin<Project> {
         this.project.afterEvaluate {
             extension.modules.forEach { module ->
                 when {
-                    module.stringFiles != null && module.srcFolders != null -> {
-                        moduleMap[module.name!!] = Configuration(module.name, module.stringFiles, module.srcFolders)
+                    module.stringFiles.isNotEmpty() && module.srcFolders.isNotEmpty() -> {
+                        moduleMap[module.name!!] = Configuration(module.name)
+                        moduleMap[module.name!!]?.stringFiles?.addAll(module.stringFiles)
+                        moduleMap[module.name!!]?.srcFolders?.addAll(module.srcFolders)
                     }
-                    module.srcFolders != null -> {
-                        moduleMap[module.name!!] =
-                            Configuration(module.name, defaultConfig().stringFiles, module.srcFolders)
+                    module.srcFolders.isNotEmpty() -> {
+                        moduleMap[module.name!!] = Configuration(module.name)
+                        moduleMap[module.name!!]?.stringFiles?.addAll(defaultConfig().stringFiles)
+                        moduleMap[module.name!!]?.srcFolders?.addAll(module.srcFolders)
                     }
-                    module.stringFiles != null -> {
-                        moduleMap[module.name!!] =
-                            Configuration(module.name, module.stringFiles, defaultConfig().srcFolders)
+                    module.stringFiles.isNotEmpty() -> {
+                        moduleMap[module.name!!] = Configuration(module.name)
+                        moduleMap[module.name!!]?.stringFiles?.addAll(module.stringFiles)
+                        moduleMap[module.name!!]?.srcFolders?.addAll(defaultConfig().srcFolders)
                     }
                 }
             }

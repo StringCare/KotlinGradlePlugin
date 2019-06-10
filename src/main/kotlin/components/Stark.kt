@@ -17,11 +17,10 @@ class Stark {
             // val path = (Stark::class.java.protectionDomain.codeSource.location.toURI()).path
             val inputStream = Stark::class.java.getResourceAsStream(name)
             val buffer = ByteArray(1024)
-            var read = -1
             val temp = File.createTempFile(name, "")
             val fos = FileOutputStream(temp)
 
-            read = inputStream.read(buffer)
+            var read = inputStream.read(buffer)
             while (read != -1) {
                 fos.write(buffer, 0, read)
                 read = inputStream.read(buffer)

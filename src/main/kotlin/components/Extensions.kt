@@ -4,7 +4,6 @@ import groovy.json.StringEscapeUtils
 import models.Configuration
 import models.Extension
 import models.ResourceFile
-import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.w3c.dom.Document
@@ -30,7 +29,7 @@ fun File.validForConfiguration(configuration: Configuration): Boolean {
             && !this.absolutePath.contains("/$resourceBackup/")
     if (valid) {
         valid = false
-        configuration.srcFolders?.forEach { folder ->
+        configuration.srcFolders.forEach { folder ->
             if (this.absolutePath.contains("/$folder/".replace("//", "/"))
                 && !this.absolutePath.contains("/$resourceBackup/")
             ) {
@@ -40,7 +39,7 @@ fun File.validForConfiguration(configuration: Configuration): Boolean {
     }
     if (valid) {
         valid = false
-        configuration.stringFiles?.forEach { file ->
+        configuration.stringFiles.forEach { file ->
             if (this.absolutePath.contains("/$file".replace("//", "/"))) {
                 valid = true
             }
@@ -53,7 +52,7 @@ fun File.resourceFile(configuration: Configuration): ResourceFile? {
     var sourceFolder = ""
     var validFile: File? = null
     var valid = false
-    configuration.srcFolders?.forEach { folder ->
+    configuration.srcFolders.forEach { folder ->
         if (this.absolutePath.contains("/$folder/".replace("//", "/"))
             && !this.absolutePath.contains("/$resourceBackup/")
         ) {
@@ -63,7 +62,7 @@ fun File.resourceFile(configuration: Configuration): ResourceFile? {
     }
     if (valid) {
         valid = false
-        configuration.stringFiles?.forEach { file ->
+        configuration.stringFiles.forEach { file ->
             if (this.absolutePath.contains("/$file".replace("//", "/"))) {
                 valid = true
                 validFile = this
@@ -87,7 +86,10 @@ fun Project.createExtension(): Extension {
 fun Process.outputString() = this.inputStream.bufferedReader().use { it.readText() }
 
 fun defaultConfig(): Configuration {
-    return Configuration("app", listOf("strings.xml"), listOf("src${File.separator}main"))
+    return Configuration("app").apply {
+        stringFiles.add("strings.xml")
+        srcFolders.add("src${File.separator}main")
+    }
 }
 
 fun ResourceFile.backup(projectPath: String): File {
