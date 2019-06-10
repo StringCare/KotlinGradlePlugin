@@ -8,7 +8,6 @@ class SCTest {
 
     private val logger by logger()
 
-    private val buildSuccess = "KotlinSample"
     private val projectName = "KotlinSample"
     private val mainModule = "app"
     private val mainModuleTest = "$projectName${File.separator}$mainModule"
@@ -175,6 +174,13 @@ class SCTest {
             buildTask.runCommand { _, androidReport ->
                 assert(androidReport.contains("BUILD SUCCESSFUL"))
             }
+        }
+    }
+
+    @Test
+    fun `12 - (PLUGIN COMPILATION) plugin with no test`() {
+        pluginBuildTask().runCommand { _, report ->
+            assert(report.contains("BUILD SUCCESSFUL"))
         }
     }
 

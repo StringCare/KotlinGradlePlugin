@@ -22,19 +22,22 @@ class StringCare : Plugin<Project> {
             extension.modules.forEach { module ->
                 when {
                     module.stringFiles.isNotEmpty() && module.srcFolders.isNotEmpty() -> {
-                        moduleMap[module.name!!] = Configuration(module.name)
-                        moduleMap[module.name!!]?.stringFiles?.addAll(module.stringFiles)
-                        moduleMap[module.name!!]?.srcFolders?.addAll(module.srcFolders)
+                        moduleMap[module.name!!] = Configuration(module.name).apply {
+                            stringFiles.addAll(module.stringFiles)
+                            srcFolders.addAll(module.srcFolders)
+                        }
                     }
                     module.srcFolders.isNotEmpty() -> {
-                        moduleMap[module.name!!] = Configuration(module.name)
-                        moduleMap[module.name!!]?.stringFiles?.addAll(defaultConfig().stringFiles)
-                        moduleMap[module.name!!]?.srcFolders?.addAll(module.srcFolders)
+                        moduleMap[module.name!!] = Configuration(module.name).apply {
+                            stringFiles.addAll(defaultConfig().stringFiles)
+                            srcFolders.addAll(module.srcFolders)
+                        }
                     }
                     module.stringFiles.isNotEmpty() -> {
-                        moduleMap[module.name!!] = Configuration(module.name)
-                        moduleMap[module.name!!]?.stringFiles?.addAll(module.stringFiles)
-                        moduleMap[module.name!!]?.srcFolders?.addAll(defaultConfig().srcFolders)
+                        moduleMap[module.name!!] = Configuration(module.name).apply {
+                            stringFiles.addAll(module.stringFiles)
+                            srcFolders.addAll(defaultConfig().srcFolders)
+                        }
                     }
                 }
             }
