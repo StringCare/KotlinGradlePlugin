@@ -2,20 +2,20 @@ package components
 
 import java.io.File
 import java.io.FileOutputStream
+import java.util.zip.ZipFile
 
-class Stark {
+open class Stark {
 
     companion object {
         init {
             when (getOs()) {
-                Os.WINDOWS -> loadLib("..\\$winLib")
-                Os.OSX -> loadLib("../$osxLib")
+                Os.WINDOWS -> loadLib(winLib)
+                Os.OSX -> loadLib(osxLib)
             }
         }
 
         private fun loadLib(name: String) {
-            // val path = (Stark::class.java.protectionDomain.codeSource.location.toURI()).path
-            val inputStream = Stark::class.java.getResourceAsStream(name)
+            val inputStream = getLibFromFolder(name)?.inputStream()?: return
             val buffer = ByteArray(1024)
             val temp = File.createTempFile(name, "")
             val fos = FileOutputStream(temp)
@@ -31,9 +31,44 @@ class Stark {
             System.load(temp.absolutePath)
         }
 
-        @JvmStatic external fun obfuscate(mainModule: String, key: String, value: ByteArray): ByteArray
+        private fun getLibFromFolder(fileName: String): File? {
+            var lib: File? = null
+            val dir = Stark::class.java.protectionDomain.codeSource.location.toURI()
+            when {
+                dir.toString().endsWith(".jar") -> {
+                    val jar = File(dir)
+                    val zip = File(jar.absolutePath.replace(".jar", ".zip"))
 
-        @JvmStatic external fun reveal(mainModule: String, key: String, value: ByteArray): ByteArray
+                    jar.copyTo(zip, true)
+
+                    ZipFile(zip.absolutePath).use { zip ->
+                        zip.entries().asSequence().forEach { entry ->
+                            zip.getInputStream(entry).use { input ->
+                                if (entry.name == fileName) {
+                                    lib = File(entry.name).apply {
+                                        this.outputStream().use { output ->
+                                            input.copyTo(output)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    lib = File(dir).walkTopDown().find { file ->
+                        file.name == fileName
+                    }
+                }
+            }
+            return lib
+        }
+
+        @JvmStatic
+        external fun obfuscate(mainModule: String, key: String, value: ByteArray): ByteArray
+
+        @JvmStatic
+        external fun reveal(mainModule: String, key: String, value: ByteArray): ByteArray
     }
 
 }

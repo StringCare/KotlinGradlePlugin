@@ -1,6 +1,6 @@
 package components
 
-import models.Configuration
+import StringCare.*
 import models.ResourceFile
 import models.SAttribute
 import models.StringEntity
@@ -30,10 +30,7 @@ fun restoreFiles(projectPath: String, module: String): List<File> {
     return resourceFiles
 }
 
-fun parseXML(file: File, debug: Boolean): List<StringEntity> {
-    if (debug) {
-        PrintUtils.print(null, file.getContent(), true)
-    }
+fun parseXML(file: File): List<StringEntity> {
     val entities = mutableListOf<StringEntity>()
 
     val doc = file.getXML()
@@ -63,7 +60,7 @@ fun parseXML(file: File, debug: Boolean): List<StringEntity> {
 }
 
 fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean) {
-    val stringEntities = parseXML(file, debug)
+    val stringEntities = parseXML(file)
     if (debug) {
         PrintUtils.print(null, file.getContent(), true)
     }
@@ -82,10 +79,13 @@ fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean) {
 
     file.updateXML(doc)
     file.removeHiddenAttributes()
+    if (debug) {
+        PrintUtils.print(null, file.getContent(), true)
+    }
 }
 
 fun obfuscate(mainModule: String, key: String, entity: StringEntity): StringEntity {
-    val obfuscation = Stark.obfuscate(mainModule, key, entity.value.toByteArray()).toReadableString()
+    val obfuscation = Stark.obfuscate(mainModule, key, entity.value.unescape().toByteArray()).toReadableString()
     return StringEntity(entity.name, entity.attributes, obfuscation, entity.tag, entity.index)
 }
 

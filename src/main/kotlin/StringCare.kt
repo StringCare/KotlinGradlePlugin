@@ -1,12 +1,16 @@
 import components.*
-import models.Configuration
-import models.Extension
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.internal.plugins.DslObject
 
-class StringCare : Plugin<Project> {
+open class StringCare : Plugin<Project> {
 
-    private lateinit var absoluteProjectPath: String
+    companion object {
+        @JvmStatic
+        private lateinit var absoluteProjectPath: String
+    }
+
     private lateinit var project: Project
     private lateinit var extension: Extension
     private val moduleMap: MutableMap<String, Configuration> = mutableMapOf()
@@ -19,7 +23,7 @@ class StringCare : Plugin<Project> {
         absoluteProjectPath = project.absolutePath()
 
         this.project.afterEvaluate {
-            extension.modules.forEach { module ->
+            extension.modules?.forEach { module ->
                 when {
                     module.stringFiles.isNotEmpty() && module.srcFolders.isNotEmpty() -> {
                         moduleMap[module.name!!] = Configuration(module.name).apply {
@@ -87,5 +91,21 @@ class StringCare : Plugin<Project> {
             }
         ))
     }
+    open class Extension {
+        var debug: Boolean = false
+        var main_module: String = "app"
+        var modules: NamedDomainObjectContainer<Configuration>
+            @Suppress("UNCHECKED_CAST")
+            get() = DslObject(this).extensions.getByName("modules") as NamedDomainObjectContainer<Configuration>
+            internal set(value) {
+                DslObject(this).extensions.add("modules", value)
+            }
+    }
 
+    open class Configuration(var name: String?) {
+        var stringFiles = mutableListOf<String>()
+        var srcFolders = mutableListOf<String>()
+    }
 }
+
+

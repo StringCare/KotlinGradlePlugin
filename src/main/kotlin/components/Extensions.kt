@@ -1,11 +1,11 @@
 package components
 
+import StringCare.*
 import groovy.json.StringEscapeUtils
-import models.Configuration
-import models.Extension
 import models.ResourceFile
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.internal.plugins.DslObject
 import org.w3c.dom.Document
 import org.xml.sax.InputSource
 import java.io.*
