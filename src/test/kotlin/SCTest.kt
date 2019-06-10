@@ -79,6 +79,7 @@ class SCTest {
     @Test
     fun `06 - (PLUGIN) restore string files`() {
         prepareTask.runCommand { _, _ ->
+            assert(restoreFiles(projectName, mainModule).isEmpty())
             assert(backupFiles(projectName, defaultConfig()).isNotEmpty())
             assert(restoreFiles(projectName, mainModule).isNotEmpty())
         }
