@@ -40,6 +40,7 @@ fun parseXML(file: File): List<StringEntity> {
         var name = ""
         val attributes = mutableListOf<SAttribute>()
         var obfuscate = false
+        var androidTreatment = true
         for (a in 0 until node.attributes.length) {
             val attribute = node.attributes.item(a)
             for (n in 0 until attribute.childNodes.length) {
@@ -49,11 +50,14 @@ fun parseXML(file: File): List<StringEntity> {
                 if (attribute.nodeName == "hidden" && attr.nodeValue != "false") {
                     obfuscate = true
                 }
+                if (attribute.nodeName == "androidTreatment" && attr.nodeValue == "false") {
+                    androidTreatment = false
+                }
                 attributes.add(SAttribute(attribute.nodeName, attr.nodeValue))
             }
         }
         if (obfuscate) {
-            entities.add(StringEntity(name, attributes, node.firstChild.nodeValue, "string", i))
+            entities.add(StringEntity(name, attributes, node.textContent, "string", i, androidTreatment))
         }
     }
     return entities
@@ -73,7 +77,7 @@ fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean) {
             it.tag == "string" && it.index == i
         }
         entity?.let {
-            node.firstChild.nodeValue = obfuscate(mainModule, key, it).value
+            node.textContent = obfuscate(mainModule, key, it).value
         }
     }
 
@@ -85,13 +89,16 @@ fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean) {
 }
 
 fun obfuscate(mainModule: String, key: String, entity: StringEntity): StringEntity {
-    val obfuscation = Stark.obfuscate(mainModule, key, entity.value.unescape().toByteArray()).toReadableString()
-    return StringEntity(entity.name, entity.attributes, obfuscation, entity.tag, entity.index)
+    val obfuscation = Stark.obfuscate(mainModule, key, when(entity.androidTreatment) {
+        true -> entity.value.androidTreatment()
+        false -> entity.value.unescape()
+    }.toByteArray()).toReadableString()
+    return StringEntity(entity.name, entity.attributes, obfuscation, entity.tag, entity.index, entity.androidTreatment)
 }
 
 fun reveal(mainModule: String, key: String, entity: StringEntity): StringEntity {
     val arr: ByteArray = entity.value.split(", ").map { it.toInt().toByte() }.toByteArray()
     val original = String(Stark.reveal(mainModule, key, arr))
-    return StringEntity(entity.name, entity.attributes, original, entity.tag, entity.index)
+    return StringEntity(entity.name, entity.attributes, original, entity.tag, entity.index, entity.androidTreatment)
 }
 

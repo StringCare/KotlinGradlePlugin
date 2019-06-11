@@ -80,7 +80,10 @@ class SCTest {
     fun `06 - (PLUGIN) restore string files`() {
         prepareTask.runCommand { _, _ ->
             assert(restoreFiles(projectName, mainModule).isEmpty())
-            assert(backupFiles(projectName, defaultConfig()).isNotEmpty())
+            assert(backupFiles(projectName, defaultConfig().apply {
+                stringFiles.add("strings_extra.xml")
+                srcFolders.add("src/other_source")
+            }).isNotEmpty())
             assert(restoreFiles(projectName, mainModule).isNotEmpty())
         }
     }
@@ -116,7 +119,10 @@ class SCTest {
     @Test
     fun `09 - (PLUGIN) obfuscate and reveal string values`() {
         signingReportTask.runCommand { _, report ->
-            val files = locateFiles(projectName, defaultConfig())
+            val files = locateFiles(projectName, defaultConfig().apply {
+                stringFiles.add("strings_extra.xml")
+                srcFolders.add("src/other_source")
+            })
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 entities.forEach { entity ->
@@ -133,7 +139,10 @@ class SCTest {
                         obfuscated
                     )
 
-                    assert(original.value == entity.value)
+                    assert(original.value == when(entity.androidTreatment) {
+                        true -> entity.value.androidTreatment()
+                        else -> entity.value
+                    })
 
                 }
             }
@@ -156,6 +165,7 @@ class SCTest {
             }
         }
     }
+
 
     @Test
     fun `11 - (ANDROID COMPILATION) obfuscate xml and build (not real workflow)`() {
@@ -188,6 +198,7 @@ class SCTest {
             assert(report.contains("BUILD SUCCESSFUL"))
         }
     }
+
 
     @Test
     fun `13 - (ANDROID COMPILATION) plugin running on Android`() {

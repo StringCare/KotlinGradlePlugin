@@ -5,7 +5,8 @@ class StringEntity(
     var attributes: List<SAttribute>,
     var value: String,
     val tag: String,
-    val index: Int
+    val index: Int,
+    val androidTreatment: Boolean = false
 )
 
 data class SAttribute(val name: String, val value: String)

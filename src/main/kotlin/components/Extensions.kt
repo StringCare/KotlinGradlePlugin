@@ -23,6 +23,16 @@ fun String.runCommand(runner: (command: String, result: String) -> Unit = { _, _
 fun String.escape(): String = Regex.escape(this)
 fun String.unescape(): String = StringEscapeUtils.unescapeJava(this)
 fun String.removeNewLines(): String = this.replace("\n", "")
+fun String.androidTreatment(): String {
+    val va = this.split(" ")
+    val values = mutableListOf<String>()
+    va.forEach { value ->
+        if (value.trim().isNotBlank()) {
+            values.add(value.trim())
+        }
+    }
+    return values.joinToString(separator = " ")
+}
 
 fun File.validForConfiguration(configuration: Configuration): Boolean {
     var valid = this.absolutePath.contains("/${configuration.name}/")
