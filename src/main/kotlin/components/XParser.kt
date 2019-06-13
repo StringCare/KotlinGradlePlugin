@@ -90,7 +90,7 @@ fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean) {
     }
 
     file.updateXML(doc)
-    file.removeHiddenAttributes()
+    file.removeAttributes()
     if (debug) {
         PrintUtils.print(null, file.getContent(), true)
     }

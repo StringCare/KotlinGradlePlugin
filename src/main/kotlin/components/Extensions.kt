@@ -154,10 +154,14 @@ fun File.updateXML(document: Document) {
     FileWriter(this.absolutePath).use { it.write(xml) }
 }
 
-fun File.removeHiddenAttributes() {
+fun File.removeAttributes() {
     val content = this.getContent()
         .replace("hidden=\"true\"", "")
         .replace("hidden=\"false\"", "")
+        .replace("containsHtml=\"true\"", "")
+        .replace("containsHtml=\"false\"", "")
+        .replace("androidTreatment=\"true\"", "")
+        .replace("androidTreatment=\"false\"", "")
     FileWriter(this.absolutePath).use { it.write(content) }
     updateXML(this.getXML())
 }
