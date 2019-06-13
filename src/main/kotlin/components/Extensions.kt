@@ -1,12 +1,11 @@
 package components
 
-import StringCare.*
+import StringCare.Configuration
+import StringCare.Extension
 import groovy.json.StringEscapeUtils
 import models.ResourceFile
-import org.apache.xerces.dom.DeferredElementImpl
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.internal.plugins.DslObject
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import org.xml.sax.InputSource
@@ -202,9 +201,27 @@ fun Node.extractHtml(): String {
         val item = this.childNodes.item(i)
         val type = item.getType()
         when (type) {
-            StringType.BR -> stringBuilder.append("<br>${item.textContent}</br>")
-            StringType.I -> stringBuilder.append("<i>${item.textContent}</i>")
-            StringType.STRONG -> stringBuilder.append("<strong>${item.textContent}</strong>")
+            StringType.BR -> stringBuilder.append(
+                "<br>${when {
+                    item.textContent.isNotEmpty() -> item.extractHtml()
+                    else -> ""
+                }
+                }</br>"
+            )
+            StringType.I -> stringBuilder.append(
+                "<i>${when {
+                    item.textContent.isNotEmpty() -> item.extractHtml()
+                    else -> ""
+                }
+                }</i>"
+            )
+            StringType.STRONG -> stringBuilder.append(
+                "<strong>${when {
+                    item.textContent.isNotEmpty() -> item.extractHtml()
+                    else -> ""
+                }
+                }</strong>"
+            )
             StringType.TEXT -> stringBuilder.append(item.textContent)
         }
 
@@ -228,6 +245,3 @@ fun Node.getType(): StringType {
         else -> StringType.TEXT
     }
 }
-
-// [#text:
-//        ]

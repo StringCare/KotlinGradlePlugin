@@ -5,3 +5,4 @@ KotlinSample
 .idea/
 out/
 .DS_Store
+local.properties
