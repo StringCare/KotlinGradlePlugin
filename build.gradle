@@ -1,10 +1,15 @@
 plugins {
     id 'java'
+    id 'com.jfrog.bintray' version '1.7.1'
     id 'org.jetbrains.kotlin.jvm' version '1.3.21'
+    id "com.github.dcendents.android-maven" version "2.1"
 }
 
 group 'com.stringcare'
-version '2.3-SNAPSHOT'
+version '2.2'
+
+def siteUrl = 'https://github.com/StringCare/GradlePlugin'
+def gitUrl = 'https://github.com/StringCare/GradlePlugin.git'
 
 sourceCompatibility = 1.8
 
@@ -24,6 +29,53 @@ compileKotlin {
 }
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+install {
+    repositories.mavenInstaller {
+        pom {
+            project {
+                packaging 'aar'
+                name 'StringCareAndroidPlugin'
+                url siteUrl
+                // Set your license
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'efraespada'
+                        name 'efraespada'
+                        email 'efraespada@gmail.com'
+                    }
+                }
+                scm {
+                    connection gitUrl
+                    developerConnection gitUrl
+                    url siteUrl
+                }
+            }
+        }
+    }
+}
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+bintray {
+    user = properties.getProperty("bintrayUser")
+    key = properties.getProperty("bintrayApiKey")
+    configurations = ['archives']
+    pkg {
+        repo = "maven"
+        name = "StringCareAndroidPlugin"
+        websiteUrl = siteUrl
+        vcsUrl = gitUrl
+        licenses = ["Apache-2.0"]
+        publish = true
+    }
 }
 
 processResources {
