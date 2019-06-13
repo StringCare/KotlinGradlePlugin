@@ -27,6 +27,7 @@ fun restoreFiles(projectPath: String, module: String): List<File> {
     }.map {
         it.restore(projectPath)
     }
+    File("$projectPath${File.separator}$resourceBackup").deleteRecursively()
     return resourceFiles
 }
 
@@ -41,6 +42,7 @@ fun parseXML(file: File): List<StringEntity> {
         val attributes = mutableListOf<SAttribute>()
         var obfuscate = false
         var androidTreatment = true
+        var containsHtml = false
         for (a in 0 until node.attributes.length) {
             val attribute = node.attributes.item(a)
             for (n in 0 until attribute.childNodes.length) {
@@ -53,11 +55,17 @@ fun parseXML(file: File): List<StringEntity> {
                 if (attribute.nodeName == "androidTreatment" && attr.nodeValue == "false") {
                     androidTreatment = false
                 }
+                if (attribute.nodeName == "containsHtml" && attr.nodeValue != "false") {
+                    containsHtml = true
+                }
                 attributes.add(SAttribute(attribute.nodeName, attr.nodeValue))
             }
         }
         if (obfuscate) {
-            entities.add(StringEntity(name, attributes, node.textContent, "string", i, androidTreatment))
+            entities.add(StringEntity(name, attributes, when {
+                containsHtml -> node.extractHtml()
+                else -> node.textContent
+            }, "string", i, androidTreatment))
         }
     }
     return entities

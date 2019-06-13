@@ -37,15 +37,16 @@ open class Stark {
             when {
                 dir.toString().endsWith(".jar") -> {
                     val jar = File(dir)
-                    val zip = File(jar.absolutePath.replace(".jar", ".zip"))
+                    val zipFile = File(jar.absolutePath.replace(".jar", ".zip"))
 
-                    jar.copyTo(zip, true)
+                    jar.copyTo(zipFile, true)
 
-                    ZipFile(zip.absolutePath).use { zip ->
+                    ZipFile(zipFile.absolutePath).use { zip ->
                         zip.entries().asSequence().forEach { entry ->
                             zip.getInputStream(entry).use { input ->
                                 if (entry.name == fileName) {
-                                    lib = File(entry.name).apply {
+
+                                    lib = File("$resourceBackup${File.separator}${entry.name}").apply {
                                         this.outputStream().use { output ->
                                             input.copyTo(output)
                                         }

@@ -23,7 +23,7 @@ open class StringCare : Plugin<Project> {
         absoluteProjectPath = project.absolutePath()
 
         this.project.afterEvaluate {
-            extension.modules?.forEach { module ->
+            extension.modules.forEach { module ->
                 when {
                     module.stringFiles.isNotEmpty() && module.srcFolders.isNotEmpty() -> {
                         moduleMap[module.name!!] = Configuration(module.name).apply {

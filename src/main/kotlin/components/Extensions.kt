@@ -3,10 +3,12 @@ package components
 import StringCare.*
 import groovy.json.StringEscapeUtils
 import models.ResourceFile
+import org.apache.xerces.dom.DeferredElementImpl
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.internal.plugins.DslObject
 import org.w3c.dom.Document
+import org.w3c.dom.Node
 import org.xml.sax.InputSource
 import java.io.*
 import javax.xml.parsers.DocumentBuilderFactory
@@ -156,7 +158,6 @@ fun File.removeHiddenAttributes() {
     val content = this.getContent()
         .replace("hidden=\"true\"", "")
         .replace("hidden=\"false\"", "")
-        .replace("hidden", "")
     FileWriter(this.absolutePath).use { it.write(content) }
     updateXML(this.getXML())
 }
@@ -191,4 +192,38 @@ fun Task.onMergeResourcesStartsVariant(): String = this.name.substring(merge.len
 fun Task.onMergeResourcesFinishVariant(): String = this.name.substring(merge.length)
     .substring(0, this.name.substring(merge.length).length - resources.length)
 
+fun Node.extractHtml(): String {
+    val stringBuilder = StringBuilder()
+    for (i in 0 until this.childNodes.length) {
+        val item = this.childNodes.item(i)
+        val type = item.getType()
+        when (type) {
+            StringType.BR -> stringBuilder.append("<br>${item.textContent}</br>")
+            StringType.I -> stringBuilder.append("<i>${item.textContent}</i>")
+            StringType.STRONG -> stringBuilder.append("<strong>${item.textContent}</strong>")
+            StringType.TEXT -> stringBuilder.append(item.textContent)
+        }
 
+    }
+    return stringBuilder.toString()
+}
+
+enum class StringType {
+    BR,
+    TEXT,
+    I,
+    STRONG
+}
+
+fun Node.getType(): StringType {
+    return when {
+        this.toString().contains("[br:") -> StringType.BR
+        this.toString().contains("[i:") -> StringType.I
+        this.toString().contains("[strong:") -> StringType.STRONG
+        this.toString().contains("[#text") -> StringType.TEXT
+        else -> StringType.TEXT
+    }
+}
+
+// [#text:
+//        ]
