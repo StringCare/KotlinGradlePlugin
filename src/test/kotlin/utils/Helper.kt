@@ -1,6 +1,5 @@
 package utils
 
-import components.extensionName
 import components.getContent
 import java.io.File
 import java.io.FileWriter
