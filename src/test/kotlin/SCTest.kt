@@ -14,12 +14,12 @@ class SCTest {
     private val mainModuleTest = "$projectName${File.separator}$mainModule"
 
     private val librarySetupTask = """
-            cp src/main/kotlin/components/jni/$osxLib out/production/classes/$osxLib
-            cp src/main/kotlin/components/jni/$winLib out/production/classes/$winLib
+            ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$osxLib out${File.separator}production${File.separator}classes${File.separator}$osxLib &&
+            ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$winLib out${File.separator}production${File.separator}classes${File.separator}$winLib
         """.trimIndent()
 
     private val prepareTask = """
-            rm -rf $projectName &&
+            ${deleteFolderCommand(projectName)} &&
             git clone https://github.com/StringCare/$projectName.git &&
             cd $projectName
         """.trimIndent()
@@ -82,7 +82,7 @@ class SCTest {
             assert(restoreFiles(projectName, mainModule).isEmpty())
             assert(backupFiles(projectName, defaultConfig().apply {
                 stringFiles.add("strings_extra.xml")
-                srcFolders.add("src/other_source")
+                srcFolders.add("src${File.separator}other_source")
             }).isNotEmpty())
             assert(restoreFiles(projectName, mainModule).isNotEmpty())
         }
@@ -101,13 +101,15 @@ class SCTest {
     @Test
     fun `08 - (PLUGIN) obfuscate string values`() {
         signingReportTask.runCommand { _, report ->
+            val key = report.extractFingerprint()
+            assert(key.isNotEmpty())
             val files = locateFiles(projectName, defaultConfig())
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 entities.forEach { entity ->
                     val obfuscated = obfuscate(
                         mainModuleTest,
-                        report.extractFingerprint(),
+                        key,
                         entity
                     )
                     assert(obfuscated.value != entity.value)
@@ -119,23 +121,25 @@ class SCTest {
     @Test
     fun `09 - (PLUGIN) obfuscate and reveal string values`() {
         signingReportTask.runCommand { _, report ->
+            val key = report.extractFingerprint()
+            assert(key.isNotEmpty())
             val files = locateFiles(projectName, defaultConfig().apply {
                 stringFiles.add("strings_extra.xml")
-                srcFolders.add("src/other_source")
+                srcFolders.add("src${File.separator}other_source")
             })
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 entities.forEach { entity ->
                     val obfuscated = obfuscate(
                         mainModuleTest,
-                        report.extractFingerprint(),
+                        key,
                         entity
                     )
                     assert(obfuscated.value != entity.value)
 
                     val original = reveal(
                         mainModuleTest,
-                        report.extractFingerprint(),
+                        key,
                         obfuscated
                     )
 
@@ -172,7 +176,7 @@ class SCTest {
         signingReportTask.runCommand { _, report ->
             val files = locateFiles(projectName, defaultConfig().apply {
                 stringFiles.add("strings_extra.xml")
-                srcFolders.add("src/other_source")
+                srcFolders.add("src${File.separator}other_source")
             })
             files.forEach { file ->
                 val entities = parseXML(file.file)
@@ -181,7 +185,7 @@ class SCTest {
             }
             val filesObfuscated = locateFiles(projectName, defaultConfig().apply {
                 stringFiles.add("strings_extra.xml")
-                srcFolders.add("src/other_source")
+                srcFolders.add("src${File.separator}other_source")
             })
             filesObfuscated.forEach { file ->
                 val entities = parseXML(file.file)

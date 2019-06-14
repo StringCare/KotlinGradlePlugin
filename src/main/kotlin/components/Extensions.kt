@@ -94,7 +94,11 @@ fun Project.createExtension(): Extension {
     return extension
 }
 
-fun Process.outputString() = this.inputStream.bufferedReader().use { it.readText() }
+fun Process.outputString(): String {
+    val input = this.inputStream.bufferedReader().use { it.readText() }
+    val error = this.errorStream.bufferedReader().use { it.readText() }
+    return if (input.isNotEmpty()) input else error
+}
 
 fun defaultConfig(): Configuration {
     return Configuration("app").apply {
