@@ -14,12 +14,12 @@ private fun execute(runtime: Runtime, command: String): ExecutionResult {
         when (getOs()) {
             Os.WINDOWS -> {
                 ExecutionResult(
-                    command.normalizeCommand(),
+                    command.normalize(),
                     runtime.exec(
                         arrayOf(
                             "cmd",
                             "/c",
-                            command.normalizeCommand()
+                            command.normalize()
                         )
                     ).outputString()
                 )
@@ -38,7 +38,7 @@ private fun execute(runtime: Runtime, command: String): ExecutionResult {
             }
         }
     } catch (e: IOException) {
-        ExecutionResult(command.normalizeCommand(), "")
+        ExecutionResult(command.normalize(), "")
     }
 }
 

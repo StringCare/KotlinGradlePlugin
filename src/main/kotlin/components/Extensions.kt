@@ -21,7 +21,7 @@ fun String.runCommand(runner: (command: String, result: String) -> Unit = { _, _
     return result.result
 }
 
-fun String.normalizeCommand(): String {
+fun String.normalize(): String {
     val com = mutableListOf<String>()
     this.replace("\n", " ").split(" ").forEach {
         if (it.trim().isNotEmpty()) {
@@ -129,10 +129,7 @@ fun Project.createExtension(): Extension {
 fun Process.outputString(): String {
     val input = this.inputStream.bufferedReader().use { it.readText() }
     val error = this.errorStream.bufferedReader().use { it.readText() }
-    return (when {
-        input.isNotEmpty() -> input
-        else -> error
-    }).replace("\r", "")
+    return "$input \n $error".replace("\r", "")
 }
 
 fun defaultConfig(): Configuration {

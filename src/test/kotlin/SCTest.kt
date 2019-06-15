@@ -1,7 +1,6 @@
 import components.*
 import org.junit.Before
 import org.junit.Test
-import utils.modifyForTest
 import java.io.File
 
 class SCTest {
@@ -16,7 +15,7 @@ class SCTest {
     @Test
     fun `01 - (PLUGIN) terminal verification`() {
         "echo $extensionName".runCommand { command, result ->
-            assert(command.contains(result.removeNewLines()))
+            assert(command.contains(result.normalize()))
         }
     }
 
@@ -125,6 +124,7 @@ class SCTest {
         }
     }
 
+    /*
     @Test
     fun `10 - (PLUGIN) obfuscate xml`() {
         signingReportTask.runCommand { _, report ->
@@ -187,6 +187,6 @@ class SCTest {
                 assert(androidReport.contains("BUILD SUCCESSFUL"))
             }
         }
-    }
+    }*/
 
 }
