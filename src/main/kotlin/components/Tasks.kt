@@ -15,36 +15,41 @@ internal fun gradleWrapper(): String = when (getOs()) {
 internal fun pluginBuildTask(): String = "${when (getOs()) {
     Os.WINDOWS -> wrapperWindows
     Os.OSX -> wrapperOsX
-}} build -d --exclude-task test"
+}} build --exclude-task test"
 
 internal val librarySetupTask = """
             ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$osxLib out${File.separator}production${File.separator}classes${File.separator}$osxLib &&
             ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$winLib out${File.separator}production${File.separator}classes${File.separator}$winLib
         """.trimIndent()
 
-internal val prepareTask = """
-            ${resetCommand(testProjectName)}
+internal fun prepareTask(directory: String): String {
+    return """
+            cd $directory &&
             git clone https://github.com/StringCare/$testProjectName.git &&
             cd $testProjectName
         """.trimIndent()
+}
 
-internal val buildTask = """
-        cd $testProjectName &&
-        ${gradleWrapper()} build &&
-        ${gradleWrapper()} --stop
+internal fun buildTask(directory: String): String {
+    return """
+        cd $directory &&
+        ${gradleWrapper()} build
         """.trimIndent()
+}
 
 // gradlew task needs export ANDROID_SDK_ROOT=/Users/efrainespada/Library/Android/sdk
 // echo "sdk.dir=${System.getenv("ANDROID_SDK_ROOT")}" > local.properties &&
-internal val signingReportTask = """
-            $prepareTask &&
+internal fun signingReportTask(directory: String): String {
+    return """
+            ${prepareTask(directory)} &&
             ${signingReportTask()}
         """.trimIndent()
+}
 
 internal fun resetCommand(directory: String): String {
     return when(getOs()) {
         Os.OSX -> "rm -rf $directory && "
-        Os.WINDOWS -> "rmdir /q/s $directory && "
+        Os.WINDOWS -> "rmdir /q/s $directory & "
     }
 }
 

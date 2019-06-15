@@ -13,15 +13,16 @@ private fun execute(runtime: Runtime, command: String): ExecutionResult {
     return try {
         when (getOs()) {
             Os.WINDOWS -> {
+                val process = runtime.exec(
+                    arrayOf(
+                        "cmd",
+                        "/c",
+                        command.normalize()
+                    )
+                )
                 ExecutionResult(
                     command.normalize(),
-                    runtime.exec(
-                        arrayOf(
-                            "cmd",
-                            "/c",
-                            command.normalize()
-                        )
-                    ).outputString()
+                    process.outputString()
                 )
             }
             Os.OSX -> {
