@@ -1,5 +1,11 @@
 package components
 
+import java.io.File
+
+internal const val testProjectName = "KotlinSample"
+internal const val defaultMainModule = "app"
+internal val mainModuleTest = "$testProjectName${File.separator}$defaultMainModule"
+
 internal const val resourceBackup = "resbackup"
 internal const val extensionName = "stringcare"
 internal const val winLib = "libsignKey.dll"

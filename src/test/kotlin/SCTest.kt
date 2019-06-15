@@ -4,37 +4,9 @@ import org.junit.Test
 import utils.modifyForTest
 import java.io.File
 
-
 class SCTest {
 
     private val logger by logger()
-
-    private val projectName = "KotlinSample"
-    private val mainModule = "app"
-    private val mainModuleTest = "$projectName${File.separator}$mainModule"
-
-    private val librarySetupTask = """
-            ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$osxLib out${File.separator}production${File.separator}classes${File.separator}$osxLib &&
-            ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$winLib out${File.separator}production${File.separator}classes${File.separator}$winLib
-        """.trimIndent()
-
-    private val prepareTask = """
-            ${deleteFolderCommand(projectName)} &&
-            git clone https://github.com/StringCare/$projectName.git &&
-            cd $projectName
-        """.trimIndent()
-
-    private val buildTask = """
-        cd $projectName
-        ${gradleWrapper()} build
-        """.trimIndent()
-
-    // gradlew task needs export ANDROID_SDK_ROOT=/Users/efrainespada/Library/Android/sdk
-    // echo "sdk.dir=${System.getenv("ANDROID_SDK_ROOT")}" > local.properties &&
-    private val signingReportTask = """
-            $prepareTask &&
-            ${signingReportTask()}
-        """.trimIndent()
 
     @Before
     fun setup() {
@@ -65,33 +37,33 @@ class SCTest {
     @Test
     fun `04 - (PLUGIN) locate string files for default configuration`() {
         prepareTask.runCommand { _, _ ->
-            assert(locateFiles(projectName, defaultConfig()).isNotEmpty())
+            assert(locateFiles(testProjectName, defaultConfig()).isNotEmpty())
         }
     }
 
     @Test
     fun `05 - (PLUGIN) backup string files`() {
         prepareTask.runCommand { _, _ ->
-            assert(backupFiles(projectName, defaultConfig()).isNotEmpty())
+            assert(backupFiles(testProjectName, defaultConfig()).isNotEmpty())
         }
     }
 
     @Test
     fun `06 - (PLUGIN) restore string files`() {
         prepareTask.runCommand { _, _ ->
-            assert(restoreFiles(projectName, mainModule).isEmpty())
-            assert(backupFiles(projectName, defaultConfig().apply {
+            assert(restoreFiles(testProjectName, defaultMainModule).isEmpty())
+            assert(backupFiles(testProjectName, defaultConfig().apply {
                 stringFiles.add("strings_extra.xml")
                 srcFolders.add("src${File.separator}other_source")
             }).isNotEmpty())
-            assert(restoreFiles(projectName, mainModule).isNotEmpty())
+            assert(restoreFiles(testProjectName, defaultMainModule).isNotEmpty())
         }
     }
 
     @Test
     fun `07 - (PLUGIN) xml parsing`() {
         prepareTask.runCommand { _, _ ->
-            val files = locateFiles(projectName, defaultConfig())
+            val files = locateFiles(testProjectName, defaultConfig())
             files.forEach {
                 assert(parseXML(it.file).isNotEmpty())
             }
@@ -103,7 +75,7 @@ class SCTest {
         signingReportTask.runCommand { _, report ->
             val key = report.extractFingerprint()
             assert(key.isNotEmpty())
-            val files = locateFiles(projectName, defaultConfig())
+            val files = locateFiles(testProjectName, defaultConfig())
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 entities.forEach { entity ->
@@ -123,7 +95,7 @@ class SCTest {
         signingReportTask.runCommand { _, report ->
             val key = report.extractFingerprint()
             assert(key.isNotEmpty())
-            val files = locateFiles(projectName, defaultConfig().apply {
+            val files = locateFiles(testProjectName, defaultConfig().apply {
                 stringFiles.add("strings_extra.xml")
                 srcFolders.add("src${File.separator}other_source")
             })
@@ -156,13 +128,13 @@ class SCTest {
     @Test
     fun `10 - (PLUGIN) obfuscate xml`() {
         signingReportTask.runCommand { _, report ->
-            val files = locateFiles(projectName, defaultConfig())
+            val files = locateFiles(testProjectName, defaultConfig())
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isNotEmpty())
                 modifyXML(file.file, mainModuleTest, report.extractFingerprint(), true)
             }
-            val filesObfuscated = locateFiles(projectName, defaultConfig())
+            val filesObfuscated = locateFiles(testProjectName, defaultConfig())
             filesObfuscated.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isEmpty())
@@ -174,7 +146,7 @@ class SCTest {
     @Test
     fun `11 - (ANDROID COMPILATION) obfuscate xml and build (not real workflow)`() {
         signingReportTask.runCommand { _, report ->
-            val files = locateFiles(projectName, defaultConfig().apply {
+            val files = locateFiles(testProjectName, defaultConfig().apply {
                 stringFiles.add("strings_extra.xml")
                 srcFolders.add("src${File.separator}other_source")
             })
@@ -183,7 +155,7 @@ class SCTest {
                 assert(entities.isNotEmpty())
                 modifyXML(file.file, mainModuleTest, report.extractFingerprint(), true)
             }
-            val filesObfuscated = locateFiles(projectName, defaultConfig().apply {
+            val filesObfuscated = locateFiles(testProjectName, defaultConfig().apply {
                 stringFiles.add("strings_extra.xml")
                 srcFolders.add("src${File.separator}other_source")
             })
@@ -210,7 +182,7 @@ class SCTest {
             assert(report.contains("BUILD SUCCESSFUL"))
         }
         prepareTask.runCommand { _, _ ->
-            modifyForTest(projectName)
+            modifyForTest(testProjectName)
             buildTask.runCommand { _, androidReport ->
                 assert(androidReport.contains("BUILD SUCCESSFUL"))
             }

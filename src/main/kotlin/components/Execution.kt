@@ -1,37 +1,44 @@
 package components
 
+import models.ExecutionResult
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.IOException
 
-fun executeWith(runtime: Runtime, command: String): String = execute(runtime, command)
+fun executeWith(runtime: Runtime, command: String): ExecutionResult = execute(runtime, command)
 
-fun execute(command: String): String = execute(Runtime.getRuntime(), command)
+fun execute(command: String): ExecutionResult = execute(Runtime.getRuntime(), command)
 
-private fun execute(runtime: Runtime, command: String): String {
+private fun execute(runtime: Runtime, command: String): ExecutionResult {
     return try {
         when (getOs()) {
             Os.WINDOWS -> {
-                val com = mutableListOf<String>()
-                command.replace("\n", " ").split(" ").forEach {
-                    if (it.trim().isNotEmpty()) {
-                        com.add(it)
-                    }
-                }
-                runtime.exec(arrayOf("cmd", "/c", com.joinToString(" ").replace("&&", "&"))).outputString()
+                ExecutionResult(
+                    command.normalizeCommand(),
+                    runtime.exec(
+                        arrayOf(
+                            "cmd",
+                            "/c",
+                            command.normalizeCommand()
+                        )
+                    ).outputString()
+                )
             }
             Os.OSX -> {
-                runtime.exec(
-                    arrayOf(
-                        "/bin/bash",
-                        "-c",
-                        command
-                    )
-                ).outputString()
+                ExecutionResult(
+                    command,
+                    runtime.exec(
+                        arrayOf(
+                            "/bin/bash",
+                            "-c",
+                            command
+                        )
+                    ).outputString()
+                )
             }
         }
     } catch (e: IOException) {
-        ""
+        ExecutionResult(command.normalizeCommand(), "")
     }
 }
 

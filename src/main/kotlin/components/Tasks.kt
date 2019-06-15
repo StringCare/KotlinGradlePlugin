@@ -1,5 +1,7 @@
 package components
 
+import java.io.File
+
 internal fun signingReportTask(): String = "${when (getOs()) {
     Os.WINDOWS -> wrapperWindows
     Os.OSX -> wrapperOsX
@@ -15,9 +17,35 @@ internal fun pluginBuildTask(): String = "${when (getOs()) {
     Os.OSX -> wrapperOsX
 }} build -d --exclude-task test"
 
-internal fun deleteFolderCommand(directory: String): String = when (getOs()) {
-    Os.WINDOWS -> "$deleteCommandWindows $directory"
-    Os.OSX -> "$deleteCommandOsX $directory"
+internal val librarySetupTask = """
+            ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$osxLib out${File.separator}production${File.separator}classes${File.separator}$osxLib &&
+            ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$winLib out${File.separator}production${File.separator}classes${File.separator}$winLib
+        """.trimIndent()
+
+internal val prepareTask = """
+            ${resetCommand(testProjectName)}
+            git clone https://github.com/StringCare/$testProjectName.git &&
+            cd $testProjectName
+        """.trimIndent()
+
+internal val buildTask = """
+        cd $testProjectName &&
+        ${gradleWrapper()} build &&
+        ${gradleWrapper()} --stop
+        """.trimIndent()
+
+// gradlew task needs export ANDROID_SDK_ROOT=/Users/efrainespada/Library/Android/sdk
+// echo "sdk.dir=${System.getenv("ANDROID_SDK_ROOT")}" > local.properties &&
+internal val signingReportTask = """
+            $prepareTask &&
+            ${signingReportTask()}
+        """.trimIndent()
+
+internal fun resetCommand(directory: String): String {
+    return when(getOs()) {
+        Os.OSX -> "rm -rf $directory && "
+        Os.WINDOWS -> "rmdir /q/s $directory && "
+    }
 }
 
 internal fun copyCommand(): String = when (getOs()) {

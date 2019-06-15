@@ -17,8 +17,18 @@ import javax.xml.transform.stream.StreamResult
 
 fun String.runCommand(runner: (command: String, result: String) -> Unit = { _, _ -> }): String {
     val result = execute(this)
-    runner(this, result)
-    return result
+    runner(result.command, result.result)
+    return result.result
+}
+
+fun String.normalizeCommand(): String {
+    val com = mutableListOf<String>()
+    this.replace("\n", " ").split(" ").forEach {
+        if (it.trim().isNotEmpty()) {
+            com.add(it)
+        }
+    }
+    return com.joinToString(" ")
 }
 
 fun String.escape(): String = Regex.escape(this)
@@ -36,13 +46,18 @@ fun String.androidTreatment(): String {
 }
 
 fun File.validForConfiguration(configuration: Configuration): Boolean {
-    var valid = this.absolutePath.contains("/${configuration.name}/")
-            && !this.absolutePath.contains("/$resourceBackup/")
+    var valid = this.absolutePath.contains("${File.separator}${configuration.name}${File.separator}")
+            && !this.absolutePath.contains("${File.separator}$resourceBackup${File.separator}")
     if (valid) {
         valid = false
         configuration.srcFolders.forEach { folder ->
-            if (this.absolutePath.contains("/$folder/".replace("//", "/"))
-                && !this.absolutePath.contains("/$resourceBackup/")
+            if (this.absolutePath.contains(
+                    "${File.separator}$folder${File.separator}".replace(
+                        "${File.separator}${File.separator}",
+                        "${File.separator}"
+                    )
+                )
+                && !this.absolutePath.contains("${File.separator}$resourceBackup${File.separator}")
             ) {
                 valid = true
             }
@@ -51,7 +66,13 @@ fun File.validForConfiguration(configuration: Configuration): Boolean {
     if (valid) {
         valid = false
         configuration.stringFiles.forEach { file ->
-            if (this.absolutePath.contains("/$file".replace("//", "/"))) {
+            if (this.absolutePath.contains(
+                    "${File.separator}$file".replace(
+                        "${File.separator}${File.separator}",
+                        "${File.separator}"
+                    )
+                )
+            ) {
                 valid = true
             }
         }
@@ -64,8 +85,13 @@ fun File.resourceFile(configuration: Configuration): ResourceFile? {
     var validFile: File? = null
     var valid = false
     configuration.srcFolders.forEach { folder ->
-        if (this.absolutePath.contains("/$folder/".replace("//", "/"))
-            && !this.absolutePath.contains("/$resourceBackup/")
+        if (this.absolutePath.contains(
+                "${File.separator}$folder${File.separator}".replace(
+                    "${File.separator}${File.separator}",
+                    "${File.separator}"
+                )
+            )
+            && !this.absolutePath.contains("${File.separator}$resourceBackup${File.separator}")
         ) {
             sourceFolder = folder
             valid = true
@@ -74,7 +100,13 @@ fun File.resourceFile(configuration: Configuration): ResourceFile? {
     if (valid) {
         valid = false
         configuration.stringFiles.forEach { file ->
-            if (this.absolutePath.contains("/$file".replace("//", "/"))) {
+            if (this.absolutePath.contains(
+                    "${File.separator}$file".replace(
+                        "${File.separator}${File.separator}",
+                        "${File.separator}"
+                    )
+                )
+            ) {
                 valid = true
                 validFile = this
             }
@@ -97,7 +129,10 @@ fun Project.createExtension(): Extension {
 fun Process.outputString(): String {
     val input = this.inputStream.bufferedReader().use { it.readText() }
     val error = this.errorStream.bufferedReader().use { it.readText() }
-    return if (input.isNotEmpty()) input else error
+    return (when {
+        input.isNotEmpty() -> input
+        else -> error
+    }).replace("\r", "")
 }
 
 fun defaultConfig(): Configuration {
@@ -122,6 +157,9 @@ fun File.restore(projectPath: String): File {
         .replace("${File.separator}${File.separator}", File.separator)
 
     val restore = File(cleanPath)
+    if (restore.exists()) {
+        restore.delete()
+    }
     this.copyTo(restore, true)
     return restore
 }
