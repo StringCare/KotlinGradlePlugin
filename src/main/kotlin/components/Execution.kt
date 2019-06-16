@@ -1,8 +1,8 @@
 package components
 
+import com.google.common.io.Files
 import models.ExecutionResult
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import java.io.File
 import java.io.IOException
 
 fun executeWith(runtime: Runtime, command: String): ExecutionResult = execute(runtime, command)
@@ -43,7 +43,9 @@ private fun execute(runtime: Runtime, command: String): ExecutionResult {
     }
 }
 
-fun <R : Any> R.logger(): Lazy<Logger> {
-    return lazy { LoggerFactory.getLogger(this.javaClass) }
+fun tempPath(): String {
+    StringCare.tempFolder = Files.createTempDir().absolutePath
+    return StringCare.tempFolder
+
 }
 

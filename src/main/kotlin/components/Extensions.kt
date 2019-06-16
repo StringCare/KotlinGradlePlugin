@@ -6,6 +6,8 @@ import groovy.json.StringEscapeUtils
 import models.ResourceFile
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import org.xml.sax.InputSource
@@ -47,17 +49,16 @@ fun String.androidTreatment(): String {
 
 fun File.validForConfiguration(configuration: Configuration): Boolean {
     var valid = this.absolutePath.contains("${File.separator}${configuration.name}${File.separator}")
-            && !this.absolutePath.contains("${File.separator}$resourceBackup${File.separator}")
+
     if (valid) {
         valid = false
         configuration.srcFolders.forEach { folder ->
             if (this.absolutePath.contains(
                     "${File.separator}$folder${File.separator}".replace(
                         "${File.separator}${File.separator}",
-                        "${File.separator}"
+                        File.separator
                     )
                 )
-                && !this.absolutePath.contains("${File.separator}$resourceBackup${File.separator}")
             ) {
                 valid = true
             }
@@ -69,7 +70,7 @@ fun File.validForConfiguration(configuration: Configuration): Boolean {
             if (this.absolutePath.contains(
                     "${File.separator}$file".replace(
                         "${File.separator}${File.separator}",
-                        "${File.separator}"
+                        File.separator
                     )
                 )
             ) {
@@ -88,10 +89,9 @@ fun File.resourceFile(configuration: Configuration): ResourceFile? {
         if (this.absolutePath.contains(
                 "${File.separator}$folder${File.separator}".replace(
                     "${File.separator}${File.separator}",
-                    "${File.separator}"
+                    File.separator
                 )
             )
-            && !this.absolutePath.contains("${File.separator}$resourceBackup${File.separator}")
         ) {
             sourceFolder = folder
             valid = true
@@ -103,7 +103,7 @@ fun File.resourceFile(configuration: Configuration): ResourceFile? {
             if (this.absolutePath.contains(
                     "${File.separator}$file".replace(
                         "${File.separator}${File.separator}",
-                        "${File.separator}"
+                        File.separator
                     )
                 )
             ) {
@@ -140,8 +140,7 @@ fun defaultConfig(): Configuration {
 }
 
 fun ResourceFile.backup(projectPath: String): File {
-    val cleanPath = "$projectPath${File.separator}$resourceBackup${File.separator}${this.module}" +
-            "${File.separator}${this.sourceFolder}${this.file.absolutePath.split(this.sourceFolder)[1]}"
+    val cleanPath = "${StringCare.tempFolder}${File.separator}${this.module}${File.separator}${this.sourceFolder}${this.file.absolutePath.split(this.sourceFolder)[1]}"
                 .replace("${File.separator}${File.separator}", File.separator)
 
     val backupFile = File(cleanPath)
@@ -150,7 +149,7 @@ fun ResourceFile.backup(projectPath: String): File {
 }
 
 fun File.restore(projectPath: String): File {
-    val cleanPath = "$projectPath${File.separator}${this.absolutePath.split(resourceBackup)[1]}"
+    val cleanPath = "$projectPath${File.separator}${this.absolutePath.split(StringCare.tempFolder)[1]}"
         .replace("${File.separator}${File.separator}", File.separator)
 
     val restore = File(cleanPath)
@@ -234,6 +233,10 @@ fun Task.onMergeResourcesStartsVariant(): String = this.name.substring(merge.len
 
 fun Task.onMergeResourcesFinishVariant(): String = this.name.substring(merge.length)
     .substring(0, this.name.substring(merge.length).length - resources.length)
+
+fun <R : Any> R.logger(): Lazy<Logger> {
+    return lazy { LoggerFactory.getLogger(this.javaClass) }
+}
 
 fun Node.extractHtml(): String {
     val stringBuilder = StringBuilder()

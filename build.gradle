@@ -20,7 +20,7 @@ repositories {
 dependencies {
     implementation gradleApi()
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    testImplementation group: 'com.google.guava', name: 'guava', version: '28.0-jre'
+    implementation group: 'com.google.guava', name: 'guava', version: '28.0-jre'
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile group: 'org.mockito', name: 'mockito-core', version: '2.1.0'
 }

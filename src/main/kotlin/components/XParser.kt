@@ -9,7 +9,9 @@ import java.io.File
 fun locateFiles(projectPath: String, configuration: Configuration): List<ResourceFile> = File(projectPath).walkTopDown()
     .filterIndexed { _, file ->
         file.validForConfiguration(configuration)
-    }.map { it.resourceFile(configuration)!! }.toList()
+    }.map {
+        it.resourceFile(configuration)!!
+    }.toList()
 
 fun backupFiles(projectPath: String, configuration: Configuration): List<File> {
     val resourceFiles = mutableListOf<File>()
@@ -21,13 +23,13 @@ fun backupFiles(projectPath: String, configuration: Configuration): List<File> {
 }
 
 fun restoreFiles(projectPath: String, module: String): List<File> {
-    val resourceFiles = File("$projectPath${File.separator}$resourceBackup${File.separator}$module").walkTopDown().toList()
+    val resourceFiles = File("${StringCare.tempFolder}${File.separator}$module").walkTopDown().toList()
     resourceFiles.filter { file ->
         !file.isDirectory
     }.map {
         it.restore(projectPath)
     }
-    File("$projectPath${File.separator}$resourceBackup").deleteRecursively()
+    StringCare.resetFolder()
     return resourceFiles
 }
 

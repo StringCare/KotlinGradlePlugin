@@ -46,7 +46,7 @@ open class Stark {
                             zip.getInputStream(entry).use { input ->
                                 if (entry.name == fileName) {
 
-                                    lib = File("$resourceBackup${File.separator}${entry.name}").apply {
+                                    lib = File("${StringCare.tempFolder}${File.separator}${entry.name}").apply {
                                         this.outputStream().use { output ->
                                             input.copyTo(output)
                                         }

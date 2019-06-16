@@ -9,6 +9,18 @@ open class StringCare : Plugin<Project> {
     companion object {
         @JvmStatic
         private lateinit var absoluteProjectPath: String
+
+        internal var internalTempDir: String? = null
+        @JvmStatic
+        var tempFolder: String
+            get() = internalTempDir?: tempPath()
+            set(value) {
+                internalTempDir = value
+            }
+
+        fun resetFolder() {
+            internalTempDir = null
+        }
     }
 
     private lateinit var project: Project
