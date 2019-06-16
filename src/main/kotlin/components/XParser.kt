@@ -48,7 +48,6 @@ fun parseXML(file: File): List<StringEntity> {
             val attribute = node.attributes.item(a)
             for (n in 0 until attribute.childNodes.length) {
                 val attr = attribute.childNodes.item(n)
-                // can set value
                 if (attribute.nodeName == "name") name = attr.nodeValue
                 if (attribute.nodeName == "hidden" && attr.nodeValue != "false") {
                     obfuscate = true
