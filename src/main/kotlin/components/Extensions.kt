@@ -157,7 +157,8 @@ fun File.restore(projectPath: String): File {
     if (restore.exists()) {
         restore.delete()
     }
-    this.copyTo(restore, true)
+    FileWriter(restore.absolutePath).use { it.write(this.getContent()) }
+    // this.copyTo(restore, true)
     return restore
 }
 
