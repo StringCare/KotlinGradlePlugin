@@ -13,22 +13,21 @@ fun locateFiles(projectPath: String, configuration: Configuration): List<Resourc
         it.resourceFile(configuration)!!
     }.toList()
 
-fun backupFiles(projectPath: String, configuration: Configuration): List<File> {
-    val resourceFiles = mutableListOf<File>()
+fun backupFiles(projectPath: String, configuration: Configuration): List<ResourceFile> {
     val files = locateFiles(projectPath, configuration)
     files.forEach { resource ->
-        resourceFiles.add(resource.backup(projectPath))
+        resource.backup()
     }
-    return resourceFiles
+    return files
 }
 
 fun restoreFiles(projectPath: String, module: String): List<File> {
-    val resourceFiles = File("${StringCare.tempFolder}${File.separator}$module").walkTopDown().toList()
-    resourceFiles.filter { file ->
-        !file.isDirectory
-    }.map {
-        it.restore(projectPath)
-    }
+    val resourceFiles = File("${StringCare.tempFolder}${File.separator}$module")
+        .walkTopDown().toList().filter { file ->
+            !file.isDirectory
+        }.map {
+            it.restore(projectPath)
+        }
     StringCare.resetFolder()
     return resourceFiles
 }
@@ -64,10 +63,14 @@ fun parseXML(file: File): List<StringEntity> {
             }
         }
         if (obfuscate) {
-            entities.add(StringEntity(name, attributes, when {
-                containsHtml -> node.extractHtml()
-                else -> node.textContent
-            }, "string", i, androidTreatment))
+            entities.add(
+                StringEntity(
+                    name, attributes, when {
+                        containsHtml -> node.extractHtml()
+                        else -> node.textContent
+                    }, "string", i, androidTreatment
+                )
+            )
         }
     }
     return entities
@@ -99,10 +102,12 @@ fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean) {
 }
 
 fun obfuscate(mainModule: String, key: String, entity: StringEntity): StringEntity {
-    val obfuscation = Stark.obfuscate(mainModule, key, when(entity.androidTreatment) {
-        true -> entity.value.androidTreatment()
-        false -> entity.value.unescape()
-    }.toByteArray()).toReadableString()
+    val obfuscation = Stark.obfuscate(
+        mainModule, key, when (entity.androidTreatment) {
+            true -> entity.value.androidTreatment()
+            false -> entity.value.unescape()
+        }.toByteArray()
+    ).toReadableString()
     return StringEntity(entity.name, entity.attributes, obfuscation, entity.tag, entity.index, entity.androidTreatment)
 }
 

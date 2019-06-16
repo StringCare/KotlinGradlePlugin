@@ -1,4 +1,5 @@
 import components.*
+import models.StringEntity
 import org.junit.Before
 import org.junit.Test
 import utils.modifyForTest
@@ -162,7 +163,55 @@ class SCTest {
     }
 
     @Test
-    fun `11 - (ANDROID COMPILATION) obfuscate xml and build (not real workflow)`() {
+    fun `11 - (PLUGIN) obfuscate, restore and compare xml values with originals`() {
+        val temp = tempPath()
+        signingReportTask(temp).runCommand { _, report ->
+            val configuration = defaultConfig().apply {
+                stringFiles.add("strings_extra.xml")
+                srcFolders.add("src${File.separator}other_source")
+            }
+            val files = backupFiles("$temp${File.separator}$testProjectName", configuration)
+            assert(files.isNotEmpty())
+            files.forEach { file ->
+                val entities = parseXML(file.file)
+                assert(entities.isNotEmpty())
+                modifyXML(file.file, "$temp${File.separator}$mainModuleTest", report.extractFingerprint(), true)
+            }
+            val filesObfuscated = locateFiles("$temp${File.separator}$testProjectName", configuration)
+            filesObfuscated.forEach { file ->
+                val entities = parseXML(file.file)
+                assert(entities.isEmpty())
+            }
+
+            val restoredFiles = restoreFiles("$temp${File.separator}$testProjectName", defaultMainModule)
+            assert(restoredFiles.isNotEmpty())
+
+            val originalEntities = mutableListOf<StringEntity>()
+            files.forEach { file ->
+                originalEntities.addAll(parseXML(file.file))
+            }
+            assert(originalEntities.isNotEmpty())
+
+            val restoredEntities = mutableListOf<StringEntity>()
+            restoredFiles.forEach { file ->
+                restoredEntities.addAll(parseXML(file))
+            }
+            assert(restoredEntities.isNotEmpty())
+
+            originalEntities.forEach { entity ->
+                val eq = restoredEntities.find {
+                    it.name == entity.name
+                }
+                eq?.let {
+                    assert(entity.name == it.name)
+                    assert(entity.value == it.value)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `12 - (ANDROID COMPILATION) obfuscate xml and build (not real workflow)`() {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             val files = locateFiles("$temp${File.separator}$testProjectName", defaultConfig().apply {
@@ -194,14 +243,14 @@ class SCTest {
     }
 
     @Test
-    fun `12 - (PLUGIN COMPILATION) plugin with no test`() {
+    fun `13 - (PLUGIN COMPILATION) plugin with no test`() {
         pluginBuildTask().runCommand { _, report ->
             assert(report.contains("BUILD SUCCESSFUL"))
         }
     }
 
     @Test
-    fun `13 - (ANDROID COMPILATION) plugin running on Android`() {
+    fun `14 - (ANDROID COMPILATION) plugin running on Android`() {
         pluginBuildTask().runCommand { _, report ->
             assert(report.contains("BUILD SUCCESSFUL"))
         }

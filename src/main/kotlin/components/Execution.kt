@@ -2,10 +2,7 @@ package components
 
 import com.google.common.io.Files
 import models.ExecutionResult
-import java.io.File
 import java.io.IOException
-
-fun executeWith(runtime: Runtime, command: String): ExecutionResult = execute(runtime, command)
 
 fun execute(command: String): ExecutionResult = execute(Runtime.getRuntime(), command)
 

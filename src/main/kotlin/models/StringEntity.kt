@@ -1,6 +1,6 @@
 package models
 
-class StringEntity(
+open class StringEntity(
     var name: String,
     var attributes: List<SAttribute>,
     var value: String,

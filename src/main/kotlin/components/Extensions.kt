@@ -139,7 +139,7 @@ fun defaultConfig(): Configuration {
     }
 }
 
-fun ResourceFile.backup(projectPath: String): File {
+fun ResourceFile.backup(): File {
     val cleanPath = "${StringCare.tempFolder}${File.separator}${this.module}${File.separator}${this.sourceFolder}${this.file.absolutePath.split(this.sourceFolder)[1]}"
                 .replace("${File.separator}${File.separator}", File.separator)
 
@@ -156,8 +156,14 @@ fun File.restore(projectPath: String): File {
     if (restore.exists()) {
         restore.delete()
     }
-    FileWriter(restore.absolutePath).use { it.write(this.getContent()) }
-    // this.copyTo(restore, true)
+
+    /*
+    FileWriter(restore.absolutePath).use {
+        it.write(this.getContent())
+    }*/
+
+    File(restore.absolutePath).writeText(this.getContent())
+
     return restore
 }
 
