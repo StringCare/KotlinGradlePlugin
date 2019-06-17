@@ -8,8 +8,8 @@ plugins {
 group 'com.stringcare'
 version '3.0'
 
-def siteUrl = 'https://github.com/StringCare/GradlePlugin'
-def gitUrl = 'https://github.com/StringCare/GradlePlugin.git'
+def siteUrl = 'https://github.com/StringCare/KotlinGradlePlugin'
+def gitUrl = 'https://github.com/StringCare/KotlinGradlePlugin.git'
 
 sourceCompatibility = 1.8
 
