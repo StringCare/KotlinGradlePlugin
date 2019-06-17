@@ -9,6 +9,11 @@ class SCTest {
 
     // private val logger by logger()
 
+    private val configuration = defaultConfig().apply {
+        stringFiles.add("strings_extra.xml")
+        srcFolders.add("src/other_source")
+    }
+
     @Before
     fun setup() {
         librarySetupTask.runCommand()
@@ -41,7 +46,7 @@ class SCTest {
     fun `04 - (PLUGIN) locate string files for default configuration`() {
         val temp = tempPath()
         prepareTask(temp).runCommand { _, _ ->
-            assert(locateFiles("$temp${File.separator}$testProjectName", defaultConfig()).isNotEmpty())
+            assert(locateFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty())
         }
         StringCare.resetFolder()
     }
@@ -50,7 +55,7 @@ class SCTest {
     fun `05 - (PLUGIN) backup string files`() {
         val temp = tempPath()
         prepareTask(temp).runCommand { _, _ ->
-            assert(backupFiles("$temp${File.separator}$testProjectName", defaultConfig()).isNotEmpty())
+            assert(backupFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty())
         }
         StringCare.resetFolder()
     }
@@ -63,10 +68,7 @@ class SCTest {
                 restoreFiles("$temp${File.separator}$testProjectName", defaultMainModule).isEmpty()
             )
             assert(
-                backupFiles("$temp${File.separator}$testProjectName", defaultConfig().apply {
-                    stringFiles.add("strings_extra.xml")
-                    srcFolders.add("src${File.separator}other_source")
-                }).isNotEmpty()
+                backupFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty()
             )
             assert(
                 restoreFiles("$temp${File.separator}$testProjectName", defaultMainModule).isNotEmpty()
@@ -78,7 +80,7 @@ class SCTest {
     fun `07 - (PLUGIN) xml parsing`() {
         val temp = tempPath()
         prepareTask(temp).runCommand { _, _ ->
-            val files = locateFiles("$temp${File.separator}$testProjectName", defaultConfig())
+            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach {
                 assert(parseXML(it.file).isNotEmpty())
             }
@@ -91,7 +93,7 @@ class SCTest {
         signingReportTask(temp).runCommand { _, report ->
             val key = report.extractFingerprint()
             assert(key.isNotEmpty())
-            val files = locateFiles("$temp${File.separator}$testProjectName", defaultConfig())
+            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 entities.forEach { entity ->
@@ -112,10 +114,7 @@ class SCTest {
         signingReportTask(temp).runCommand { _, report ->
             val key = report.extractFingerprint()
             assert(key.isNotEmpty())
-            val files = locateFiles("$temp${File.separator}$testProjectName", defaultConfig().apply {
-                stringFiles.add("strings_extra.xml")
-                srcFolders.add("src${File.separator}other_source")
-            })
+            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 entities.forEach { entity ->
@@ -148,13 +147,13 @@ class SCTest {
     fun `10 - (PLUGIN) obfuscate xml`() {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
-            val files = locateFiles("$temp${File.separator}$testProjectName", defaultConfig())
+            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isNotEmpty())
                 modifyXML(file.file, "$temp${File.separator}$mainModuleTest", report.extractFingerprint(), true)
             }
-            val filesObfuscated = locateFiles("$temp${File.separator}$testProjectName", defaultConfig())
+            val filesObfuscated = locateFiles("$temp${File.separator}$testProjectName", configuration)
             filesObfuscated.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isEmpty())
@@ -166,10 +165,6 @@ class SCTest {
     fun `11 - (PLUGIN) obfuscate, restore and compare xml values with originals`() {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
-            val configuration = defaultConfig().apply {
-                stringFiles.add("strings_extra.xml")
-                srcFolders.add("src${File.separator}other_source")
-            }
             val files = backupFiles("$temp${File.separator}$testProjectName", configuration)
             assert(files.isNotEmpty())
             files.forEach { file ->
@@ -214,10 +209,7 @@ class SCTest {
     fun `12 - (ANDROID COMPILATION) obfuscate xml and build (not real workflow)`() {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
-            val files = locateFiles("$temp${File.separator}$testProjectName", defaultConfig().apply {
-                stringFiles.add("strings_extra.xml")
-                srcFolders.add("src${File.separator}other_source")
-            })
+            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isNotEmpty())
@@ -230,10 +222,7 @@ class SCTest {
             }
             val filesObfuscated = locateFiles(
                 "$temp${File.separator}$testProjectName",
-                defaultConfig().apply {
-                    stringFiles.add("strings_extra.xml")
-                    srcFolders.add("src${File.separator}other_source")
-                }
+                configuration
             )
             filesObfuscated.forEach { file ->
                 val entities = parseXML(file.file)

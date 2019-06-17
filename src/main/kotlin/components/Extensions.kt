@@ -1,5 +1,6 @@
 package components
 
+import StringCare
 import StringCare.Configuration
 import StringCare.Extension
 import groovy.json.StringEscapeUtils
@@ -31,6 +32,16 @@ fun String.normalize(): String {
         }
     }
     return com.joinToString(" ")
+}
+
+fun String.normalizePath(): String {
+    val unixPath = this.replace("\\", "/")
+        .replace("\\\\", "/")
+        .replace("//", "/")
+    return when (getOs()) {
+        Os.OSX -> unixPath
+        Os.WINDOWS -> unixPath.replace("/", "\\")
+    }
 }
 
 fun String.escape(): String = Regex.escape(this)
@@ -135,13 +146,16 @@ fun Process.outputString(): String {
 fun defaultConfig(): Configuration {
     return Configuration("app").apply {
         stringFiles.add("strings.xml")
-        srcFolders.add("src${File.separator}main")
+        srcFolders.add("src/main")
     }
 }
 
 fun ResourceFile.backup(): File {
-    val cleanPath = "${StringCare.tempFolder}${File.separator}${this.module}${File.separator}${this.sourceFolder}${this.file.absolutePath.split(this.sourceFolder)[1]}"
-                .replace("${File.separator}${File.separator}", File.separator)
+    val cleanPath =
+        "${StringCare.tempFolder}${File.separator}${this.module}${File.separator}${this.sourceFolder}${this.file.absolutePath.split(
+            this.sourceFolder
+        )[1]}"
+            .replace("${File.separator}${File.separator}", File.separator)
 
     val backupFile = File(cleanPath)
     this.file.copyTo(backupFile, true)
@@ -293,4 +307,18 @@ fun Node.getType(): StringType {
         this.toString().contains("[#text") -> StringType.TEXT
         else -> StringType.TEXT
     }
+}
+
+fun Configuration.normalize(): Configuration {
+    val stringFiles = mutableListOf<String>()
+    val sourceFolders = mutableListOf<String>()
+    this.stringFiles.forEach { file ->
+        stringFiles.add(file.normalizePath())
+    }
+    this.srcFolders.forEach { folder ->
+        sourceFolders.add(folder.normalizePath())
+    }
+    this.stringFiles = stringFiles
+    this.srcFolders = sourceFolders
+    return this
 }

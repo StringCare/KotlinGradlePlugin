@@ -8,13 +8,13 @@ import java.io.File
 
 fun locateFiles(projectPath: String, configuration: Configuration): List<ResourceFile> = File(projectPath).walkTopDown()
     .filterIndexed { _, file ->
-        file.validForConfiguration(configuration)
+        file.validForConfiguration(configuration.normalize())
     }.map {
-        it.resourceFile(configuration)!!
+        it.resourceFile(configuration.normalize())!!
     }.toList()
 
 fun backupFiles(projectPath: String, configuration: Configuration): List<ResourceFile> {
-    val files = locateFiles(projectPath, configuration)
+    val files = locateFiles(projectPath, configuration.normalize())
     files.forEach { resource ->
         resource.backup()
     }
