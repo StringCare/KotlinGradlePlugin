@@ -37,6 +37,20 @@ internal fun buildTask(directory: String): String {
         """.trimIndent()
 }
 
+internal fun basicGradleTask(directory: String): String {
+    return """
+        ${buildTask(directory)} &&
+        ${gradleWrapper()} $gradleTaskNameDoctor
+        """.trimIndent()
+}
+
+internal fun obfuscationTestGradleTask(directory: String): String {
+    return """
+        ${buildTask(directory)} &&
+        ${gradleWrapper()} ${gradleTaskNameObfuscate}Debug
+        """.trimIndent()
+}
+
 // gradlew task needs export ANDROID_SDK_ROOT=/Users/efrainespada/Library/Android/sdk
 // echo "sdk.dir=${System.getenv("ANDROID_SDK_ROOT")}" > local.properties &&
 internal fun signingReportTask(directory: String): String {

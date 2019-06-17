@@ -19,6 +19,8 @@ class SCTest {
         librarySetupTask.runCommand()
     }
 
+    /*
+
     @Test
     fun `01 - (PLUGIN) terminal verification`() {
         "echo $extensionName".runCommand { command, result ->
@@ -249,6 +251,56 @@ class SCTest {
             buildTask("$temp${File.separator}$testProjectName").runCommand { _, androidReport ->
                 assert(androidReport.contains("BUILD SUCCESSFUL"))
             }
+        }
+    }
+
+    @Test
+    fun `15 - (GRADLE TASK) basic task test`() {
+        pluginBuildTask().runCommand { _, report ->
+            assert(report.contains("BUILD SUCCESSFUL"))
+        }
+        val temp = tempPath()
+        prepareTask(temp).runCommand { _, _ ->
+            modifyForTest(temp, testProjectName)
+            basicGradleTask("$temp${File.separator}$testProjectName").runCommand { _, androidReport ->
+                assert(androidReport.contains("BUILD SUCCESSFUL"))
+                assert(androidReport.contains(gradleTaskNameDoctor))
+            }
+
+        }
+    }*/
+
+    @Test
+    fun `16 - (GRADLE TASK) basic task test`() {
+        pluginBuildTask().runCommand { _, report ->
+            assert(report.contains("BUILD SUCCESSFUL"))
+        }
+        val temp = tempPath()
+        prepareTask(temp).runCommand { _, _ ->
+            modifyForTest(temp, testProjectName)
+            basicGradleTask("$temp${File.separator}$testProjectName").runCommand { _, androidReport ->
+                assert(androidReport.contains("BUILD SUCCESSFUL"))
+                assert(androidReport.contains("END REPORT"))
+                println(androidReport)
+            }
+
+        }
+    }
+
+    @Test
+    fun `17 - (GRADLE TASK) test obfuscate`() {
+        pluginBuildTask().runCommand { _, report ->
+            assert(report.contains("BUILD SUCCESSFUL"))
+        }
+        val temp = tempPath()
+        prepareTask(temp).runCommand { _, _ ->
+            modifyForTest(temp, testProjectName)
+            obfuscationTestGradleTask("$temp${File.separator}$testProjectName").runCommand { _, androidReport ->
+                assert(androidReport.contains("BUILD SUCCESSFUL"))
+                assert(androidReport.contains("END OBFUSCATION"))
+                println(androidReport)
+            }
+
         }
     }
 

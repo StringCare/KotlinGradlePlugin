@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import org.xml.sax.InputSource
+import task.SCPreview
+import task.SCTestObfuscation
 import java.io.*
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.TransformerFactory
@@ -44,6 +46,17 @@ fun String.normalizePath(): String {
     }
 }
 
+fun String.uncapitalize(): String {
+    val original = this.trim()
+    if (original.isEmpty()) {
+        return ""
+    }
+    val char = original[0].toLowerCase()
+    return when {
+        original.length == 1 -> char.toString()
+        else -> char + original.substring(1, original.length)
+    }
+}
 fun String.escape(): String = Regex.escape(this)
 fun String.unescape(): String = StringEscapeUtils.unescapeJava(this)
 fun String.removeNewLines(): String = this.replace("\n", "")
@@ -134,7 +147,28 @@ fun Project.absolutePath(): String = this.file(wrapperWindows).absolutePath.repl
 fun Project.createExtension(): Extension {
     val extension = this.extensions.create(extensionName, Extension::class.java)
     extension.modules = this.container<Configuration>(Configuration::class.java)
+    StringCare.mainModule = extension.main_module
+    StringCare.debug = extension.debug
     return extension
+}
+
+fun Project.registerTask() {
+    this.tasks.addRule("Pattern: $gradleTaskNameObfuscate<variant>") { taskName ->
+        if (taskName.startsWith(gradleTaskNameObfuscate)) {
+            task(taskName) {
+                it.doLast {
+                    val variant = taskName.replace(gradleTaskNameObfuscate, "").uncapitalize()
+                    val task = this.tasks.getByName(gradleTaskNameObfuscate) as SCTestObfuscation
+                    task.variant = variant
+                    task.module = StringCare.mainModule
+                    task.debug = StringCare.debug
+                    task.greet()
+                }
+            }
+        }
+    }
+    this.tasks.register(gradleTaskNameDoctor, SCPreview::class.java)
+    this.tasks.register(gradleTaskNameObfuscate, SCTestObfuscation::class.java)
 }
 
 fun Process.outputString(): String {
