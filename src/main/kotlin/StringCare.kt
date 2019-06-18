@@ -52,18 +52,21 @@ open class StringCare : Plugin<Project> {
                         moduleMap[module.name!!] = Configuration(module.name).apply {
                             stringFiles.addAll(module.stringFiles)
                             srcFolders.addAll(module.srcFolders)
+                            debug = extension.debug
                         }
                     }
                     module.srcFolders.isNotEmpty() -> {
                         moduleMap[module.name!!] = Configuration(module.name).apply {
                             stringFiles.addAll(defaultConfig().stringFiles)
                             srcFolders.addAll(module.srcFolders)
+                            debug = extension.debug
                         }
                     }
                     module.stringFiles.isNotEmpty() -> {
                         moduleMap[module.name!!] = Configuration(module.name).apply {
                             stringFiles.addAll(module.stringFiles)
                             srcFolders.addAll(defaultConfig().srcFolders)
+                            debug = extension.debug
                         }
                     }
                 }
@@ -77,7 +80,8 @@ open class StringCare : Plugin<Project> {
             debug = extension.debug,
             dataFound = { _, _ ->
                 // nothing to do here
-            }, mergeResourcesStart = { module, variant ->
+            },
+            mergeResourcesStart = { module, variant ->
                 fingerPrint(module, variant, extension.debug) { key ->
                     if ("none" == key) {
                         return@fingerPrint
@@ -113,7 +117,8 @@ open class StringCare : Plugin<Project> {
                     }
                 }
 
-            }, mergeResourcesFinish = { module, _ ->
+            },
+            mergeResourcesFinish = { module, _ ->
                 restoreFiles(absoluteProjectPath, module)
             }
         ))
@@ -133,6 +138,7 @@ open class StringCare : Plugin<Project> {
     open class Configuration(var name: String?) {
         var stringFiles = mutableListOf<String>()
         var srcFolders = mutableListOf<String>()
+        var debug = false
     }
 
 }

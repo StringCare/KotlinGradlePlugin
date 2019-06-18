@@ -57,6 +57,7 @@ fun String.uncapitalize(): String {
         else -> char + original.substring(1, original.length)
     }
 }
+
 fun String.escape(): String = Regex.escape(this)
 fun String.unescape(): String = StringEscapeUtils.unescapeJava(this)
 fun String.removeNewLines(): String = this.replace("\n", "")
@@ -73,7 +74,7 @@ fun String.androidTreatment(): String {
 
 fun File.validForConfiguration(configuration: Configuration): Boolean {
     var valid = this.absolutePath.contains("${File.separator}${configuration.name}${File.separator}")
-
+            && excluded().not()
     if (valid) {
         valid = false
         configuration.srcFolders.forEach { folder ->
@@ -102,7 +103,26 @@ fun File.validForConfiguration(configuration: Configuration): Boolean {
             }
         }
     }
+    if (configuration.debug && excluded().not()) {
+        println("${if (valid) "✔ " else "❌ not"} valid file ${this.absolutePath}")
+    }
     return valid
+}
+
+fun File.excluded(): Boolean {
+    val exclude = listOf(
+        "/build/",
+        "/.git/",
+        "/.gradle/",
+        "/gradle/"
+    )
+    var valid = true
+    exclude.forEach { value ->
+        when {
+            this.absolutePath.contains(value.normalizePath()) -> valid = false
+        }
+    }
+    return (valid && this.isDirectory.not() && this.absolutePath.contains(".xml")).not()
 }
 
 fun File.resourceFile(configuration: Configuration): ResourceFile? {
@@ -155,9 +175,11 @@ fun Project.createExtension(): Extension {
 fun Project.registerTask() {
     this.tasks.addRule("Pattern: $gradleTaskNameObfuscate<variant>") { taskName ->
         if (taskName.startsWith(gradleTaskNameObfuscate)) {
+            println("taskname $taskName")
             task(taskName) {
                 it.doLast {
                     val variant = taskName.replace(gradleTaskNameObfuscate, "").uncapitalize()
+                    println("variant $variant")
                     val task = this.tasks.getByName(gradleTaskNameObfuscate) as SCTestObfuscation
                     task.variant = variant
                     task.module = StringCare.mainModule

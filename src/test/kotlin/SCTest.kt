@@ -275,7 +275,6 @@ class SCTest {
         prepareTask(temp).runCommand { _, _ ->
             modifyForTest(temp, testProjectName)
             basicGradleTask("$temp${File.separator}$testProjectName").runCommand { _, androidReport ->
-                assert(androidReport.contains("BUILD SUCCESSFUL"))
                 assert(androidReport.contains("END REPORT"))
                 println(androidReport)
             }
@@ -292,7 +291,6 @@ class SCTest {
         prepareTask(temp).runCommand { _, _ ->
             modifyForTest(temp, testProjectName)
             obfuscationTestGradleTask("$temp${File.separator}$testProjectName").runCommand { _, androidReport ->
-                assert(androidReport.contains("BUILD SUCCESSFUL"))
                 assert(androidReport.contains("END OBFUSCATION"))
                 println(androidReport)
             }

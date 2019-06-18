@@ -39,14 +39,14 @@ internal fun buildTask(directory: String): String {
 
 internal fun basicGradleTask(directory: String): String {
     return """
-        ${buildTask(directory)} &&
+        cd $directory &&
         ${gradleWrapper()} $gradleTaskNameDoctor
         """.trimIndent()
 }
 
 internal fun obfuscationTestGradleTask(directory: String): String {
     return """
-        ${buildTask(directory)} &&
+        cd $directory &&
         ${gradleWrapper()} ${gradleTaskNameObfuscate}Debug
         """.trimIndent()
 }
@@ -58,13 +58,6 @@ internal fun signingReportTask(directory: String): String {
             ${prepareTask(directory)} &&
             ${signingReportTask()}
         """.trimIndent()
-}
-
-internal fun resetCommand(directory: String): String {
-    return when(getOs()) {
-        Os.OSX -> "rm -rf $directory && "
-        Os.WINDOWS -> "rmdir /q/s $directory & "
-    }
 }
 
 internal fun copyCommand(): String = when (getOs()) {

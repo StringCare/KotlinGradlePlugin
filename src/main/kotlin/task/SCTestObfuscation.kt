@@ -20,7 +20,7 @@ open class SCTestObfuscation : DefaultTask() {
 
     @TaskAction
     fun greet() {
-        println("== OBFUSCATION ======================================")
+        println("== TEST OBFUSCATION ======================================")
         println("Modules (${moduleMap.size})")
 
         moduleMap.forEach { entry ->
@@ -34,6 +34,7 @@ open class SCTestObfuscation : DefaultTask() {
             filesToObfuscate.forEach { file ->
                 val originalEntities = parseXML(file.file)
                 println("============================")
+                println("path: ${file.file.absolutePath}")
                 originalEntities.forEach { entity ->
                     entity.attributes.forEach { attribute ->
                         println("\"${attribute.name}\": \"${attribute.value}\"")
