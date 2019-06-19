@@ -1,5 +1,6 @@
 package components
 
+import StringCare
 import StringCare.Configuration
 import StringCare.Extension
 import groovy.json.StringEscapeUtils
@@ -11,6 +12,8 @@ import org.slf4j.LoggerFactory
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import org.xml.sax.InputSource
+import task.SCPreview
+import task.SCTestObfuscation
 import java.io.*
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.TransformerFactory
@@ -33,6 +36,28 @@ fun String.normalize(): String {
     return com.joinToString(" ")
 }
 
+fun String.normalizePath(): String {
+    val unixPath = this.replace("\\", "/")
+        .replace("\\\\", "/")
+        .replace("//", "/")
+    return when (getOs()) {
+        Os.OSX -> unixPath
+        Os.WINDOWS -> unixPath.replace("/", "\\")
+    }
+}
+
+fun String.uncapitalize(): String {
+    val original = this.trim()
+    if (original.isEmpty()) {
+        return ""
+    }
+    val char = original[0].toLowerCase()
+    return when {
+        original.length == 1 -> char.toString()
+        else -> char + original.substring(1, original.length)
+    }
+}
+
 fun String.escape(): String = Regex.escape(this)
 fun String.unescape(): String = StringEscapeUtils.unescapeJava(this)
 fun String.removeNewLines(): String = this.replace("\n", "")
@@ -49,7 +74,7 @@ fun String.androidTreatment(): String {
 
 fun File.validForConfiguration(configuration: Configuration): Boolean {
     var valid = this.absolutePath.contains("${File.separator}${configuration.name}${File.separator}")
-
+            && excluded().not()
     if (valid) {
         valid = false
         configuration.srcFolders.forEach { folder ->
@@ -78,7 +103,26 @@ fun File.validForConfiguration(configuration: Configuration): Boolean {
             }
         }
     }
+    if (configuration.debug && excluded().not()) {
+        println("${if (valid) "✔ " else "❌  not"} valid file ${this.absolutePath}")
+    }
     return valid
+}
+
+fun File.excluded(): Boolean {
+    val exclude = listOf(
+        "/build/",
+        "/.git/",
+        "/.gradle/",
+        "/gradle/"
+    )
+    var valid = true
+    exclude.forEach { value ->
+        when {
+            this.absolutePath.contains(value.normalizePath()) -> valid = false
+        }
+    }
+    return (valid && this.isDirectory.not() && this.absolutePath.contains(".xml")).not()
 }
 
 fun File.resourceFile(configuration: Configuration): ResourceFile? {
@@ -123,7 +167,30 @@ fun Project.absolutePath(): String = this.file(wrapperWindows).absolutePath.repl
 fun Project.createExtension(): Extension {
     val extension = this.extensions.create(extensionName, Extension::class.java)
     extension.modules = this.container<Configuration>(Configuration::class.java)
+    StringCare.mainModule = extension.main_module
+    StringCare.debug = extension.debug
     return extension
+}
+
+fun Project.registerTask() {
+    this.tasks.addRule("Pattern: $gradleTaskNameObfuscate<variant>") { taskName ->
+        if (taskName.startsWith(gradleTaskNameObfuscate)) {
+            println("taskname $taskName")
+            task(taskName) {
+                it.doLast {
+                    val variant = taskName.replace(gradleTaskNameObfuscate, "").uncapitalize()
+                    println("variant $variant")
+                    val task = this.tasks.getByName(gradleTaskNameObfuscate) as SCTestObfuscation
+                    task.variant = variant
+                    task.module = StringCare.mainModule
+                    task.debug = StringCare.debug
+                    task.greet()
+                }
+            }
+        }
+    }
+    this.tasks.register(gradleTaskNameDoctor, SCPreview::class.java)
+    this.tasks.register(gradleTaskNameObfuscate, SCTestObfuscation::class.java)
 }
 
 fun Process.outputString(): String {
@@ -135,13 +202,16 @@ fun Process.outputString(): String {
 fun defaultConfig(): Configuration {
     return Configuration("app").apply {
         stringFiles.add("strings.xml")
-        srcFolders.add("src${File.separator}main")
+        srcFolders.add("src/main")
     }
 }
 
 fun ResourceFile.backup(): File {
-    val cleanPath = "${StringCare.tempFolder}${File.separator}${this.module}${File.separator}${this.sourceFolder}${this.file.absolutePath.split(this.sourceFolder)[1]}"
-                .replace("${File.separator}${File.separator}", File.separator)
+    val cleanPath =
+        "${StringCare.tempFolder}${File.separator}${this.module}${File.separator}${this.sourceFolder}${this.file.absolutePath.split(
+            this.sourceFolder
+        )[1]}"
+            .replace("${File.separator}${File.separator}", File.separator)
 
     val backupFile = File(cleanPath)
     this.file.copyTo(backupFile, true)
@@ -293,4 +363,18 @@ fun Node.getType(): StringType {
         this.toString().contains("[#text") -> StringType.TEXT
         else -> StringType.TEXT
     }
+}
+
+fun Configuration.normalize(): Configuration {
+    val stringFiles = mutableListOf<String>()
+    val sourceFolders = mutableListOf<String>()
+    this.stringFiles.forEach { file ->
+        stringFiles.add(file.normalizePath())
+    }
+    this.srcFolders.forEach { folder ->
+        sourceFolders.add(folder.normalizePath())
+    }
+    this.stringFiles = stringFiles
+    this.srcFolders = sourceFolders
+    return this
 }

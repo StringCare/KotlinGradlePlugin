@@ -9,6 +9,11 @@ class SCTest {
 
     // private val logger by logger()
 
+    private val configuration = defaultConfig().apply {
+        stringFiles.add("strings_extra.xml")
+        srcFolders.add("src/other_source")
+    }
+
     @Before
     fun setup() {
         librarySetupTask.runCommand()
@@ -17,6 +22,7 @@ class SCTest {
     @Test
     fun `01 - (PLUGIN) terminal verification`() {
         "echo $extensionName".runCommand { command, result ->
+            println(result)
             assert(command.contains(result.normalize()))
         }
     }
@@ -25,6 +31,7 @@ class SCTest {
     fun `02 - (PLUGIN) gradlew signingReport`() {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
+            println(report)
             assert(report.contains("SHA1") && report.contains("BUILD SUCCESSFUL"))
         }
     }
@@ -33,6 +40,7 @@ class SCTest {
     fun `03 - (PLUGIN) fingerprint extraction`() {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
+            println(report)
             assert(report.extractFingerprint().split(":").size == 20)
         }
     }
@@ -41,7 +49,7 @@ class SCTest {
     fun `04 - (PLUGIN) locate string files for default configuration`() {
         val temp = tempPath()
         prepareTask(temp).runCommand { _, _ ->
-            assert(locateFiles("$temp${File.separator}$testProjectName", defaultConfig()).isNotEmpty())
+            assert(locateFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty())
         }
         StringCare.resetFolder()
     }
@@ -50,7 +58,7 @@ class SCTest {
     fun `05 - (PLUGIN) backup string files`() {
         val temp = tempPath()
         prepareTask(temp).runCommand { _, _ ->
-            assert(backupFiles("$temp${File.separator}$testProjectName", defaultConfig()).isNotEmpty())
+            assert(backupFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty())
         }
         StringCare.resetFolder()
     }
@@ -58,15 +66,13 @@ class SCTest {
     @Test
     fun `06 - (PLUGIN) restore string files`() {
         val temp = tempPath()
-        prepareTask(temp).runCommand { _, _ ->
+        prepareTask(temp).runCommand { _, report ->
+            println(report)
             assert(
                 restoreFiles("$temp${File.separator}$testProjectName", defaultMainModule).isEmpty()
             )
             assert(
-                backupFiles("$temp${File.separator}$testProjectName", defaultConfig().apply {
-                    stringFiles.add("strings_extra.xml")
-                    srcFolders.add("src${File.separator}other_source")
-                }).isNotEmpty()
+                backupFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty()
             )
             assert(
                 restoreFiles("$temp${File.separator}$testProjectName", defaultMainModule).isNotEmpty()
@@ -77,8 +83,9 @@ class SCTest {
     @Test
     fun `07 - (PLUGIN) xml parsing`() {
         val temp = tempPath()
-        prepareTask(temp).runCommand { _, _ ->
-            val files = locateFiles("$temp${File.separator}$testProjectName", defaultConfig())
+        prepareTask(temp).runCommand { _, report ->
+            println(report)
+            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach {
                 assert(parseXML(it.file).isNotEmpty())
             }
@@ -89,9 +96,11 @@ class SCTest {
     fun `08 - (PLUGIN) obfuscate string values`() {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
+            println(report)
             val key = report.extractFingerprint()
+            println(key)
             assert(key.isNotEmpty())
-            val files = locateFiles("$temp${File.separator}$testProjectName", defaultConfig())
+            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 entities.forEach { entity ->
@@ -110,12 +119,11 @@ class SCTest {
     fun `09 - (PLUGIN) obfuscate and reveal string values`() {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
+            println(report)
             val key = report.extractFingerprint()
+            println(key)
             assert(key.isNotEmpty())
-            val files = locateFiles("$temp${File.separator}$testProjectName", defaultConfig().apply {
-                stringFiles.add("strings_extra.xml")
-                srcFolders.add("src${File.separator}other_source")
-            })
+            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 entities.forEach { entity ->
@@ -148,13 +156,14 @@ class SCTest {
     fun `10 - (PLUGIN) obfuscate xml`() {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
-            val files = locateFiles("$temp${File.separator}$testProjectName", defaultConfig())
+            println(report)
+            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isNotEmpty())
                 modifyXML(file.file, "$temp${File.separator}$mainModuleTest", report.extractFingerprint(), true)
             }
-            val filesObfuscated = locateFiles("$temp${File.separator}$testProjectName", defaultConfig())
+            val filesObfuscated = locateFiles("$temp${File.separator}$testProjectName", configuration)
             filesObfuscated.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isEmpty())
@@ -166,10 +175,7 @@ class SCTest {
     fun `11 - (PLUGIN) obfuscate, restore and compare xml values with originals`() {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
-            val configuration = defaultConfig().apply {
-                stringFiles.add("strings_extra.xml")
-                srcFolders.add("src${File.separator}other_source")
-            }
+            println(report)
             val files = backupFiles("$temp${File.separator}$testProjectName", configuration)
             assert(files.isNotEmpty())
             files.forEach { file ->
@@ -214,10 +220,8 @@ class SCTest {
     fun `12 - (ANDROID COMPILATION) obfuscate xml and build (not real workflow)`() {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
-            val files = locateFiles("$temp${File.separator}$testProjectName", defaultConfig().apply {
-                stringFiles.add("strings_extra.xml")
-                srcFolders.add("src${File.separator}other_source")
-            })
+            println(report)
+            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isNotEmpty())
@@ -230,10 +234,7 @@ class SCTest {
             }
             val filesObfuscated = locateFiles(
                 "$temp${File.separator}$testProjectName",
-                defaultConfig().apply {
-                    stringFiles.add("strings_extra.xml")
-                    srcFolders.add("src${File.separator}other_source")
-                }
+                configuration
             )
             filesObfuscated.forEach { file ->
                 val entities = parseXML(file.file)
@@ -246,6 +247,7 @@ class SCTest {
     fun `13 - (PLUGIN COMPILATION) plugin with no test`() {
         pluginBuildTask().runCommand { _, report ->
             assert(report.contains("BUILD SUCCESSFUL"))
+            println(report)
         }
     }
 
@@ -259,7 +261,40 @@ class SCTest {
             modifyForTest(temp, testProjectName)
             buildTask("$temp${File.separator}$testProjectName").runCommand { _, androidReport ->
                 assert(androidReport.contains("BUILD SUCCESSFUL"))
+                println(androidReport)
             }
+        }
+    }
+
+    @Test
+    fun `15 - (GRADLE TASK) stringcarePreview`() {
+        pluginBuildTask().runCommand { _, report ->
+            assert(report.contains("BUILD SUCCESSFUL"))
+        }
+        val temp = tempPath()
+        prepareTask(temp).runCommand { _, _ ->
+            modifyForTest(temp, testProjectName)
+            basicGradleTask("$temp${File.separator}$testProjectName").runCommand { _, androidReport ->
+                assert(androidReport.contains("END REPORT"))
+                println(androidReport)
+            }
+
+        }
+    }
+
+    @Test
+    fun `16 - (GRADLE TASK) stringcareTestObfuscate`() {
+        pluginBuildTask().runCommand { _, report ->
+            assert(report.contains("BUILD SUCCESSFUL"))
+        }
+        val temp = tempPath()
+        prepareTask(temp).runCommand { _, _ ->
+            modifyForTest(temp, testProjectName)
+            obfuscationTestGradleTask("$temp${File.separator}$testProjectName").runCommand { _, androidReport ->
+                assert(androidReport.contains("END OBFUSCATION"))
+                println(androidReport)
+            }
+
         }
     }
 

@@ -2,9 +2,14 @@ package components
 
 import java.io.File
 
+internal const val version = "3.1"
 internal const val testProjectName = "KotlinSample"
+internal const val defaultDebug = false
 internal const val defaultMainModule = "app"
+internal const val defaultVariant = "debug"
 internal val mainModuleTest = "$testProjectName${File.separator}$defaultMainModule"
+internal const val gradleTaskNameDoctor = "stringcarePreview"
+internal const val gradleTaskNameObfuscate = "stringcareTestObfuscate"
 internal const val extensionName = "stringcare"
 internal const val winLib = "libsignKey.dll"
 internal const val osxLib = "libsignKey.dylib"

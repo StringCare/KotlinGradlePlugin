@@ -6,15 +6,20 @@ import models.SAttribute
 import models.StringEntity
 import java.io.File
 
-fun locateFiles(projectPath: String, configuration: Configuration): List<ResourceFile> = File(projectPath).walkTopDown()
-    .filterIndexed { _, file ->
-        file.validForConfiguration(configuration)
-    }.map {
-        it.resourceFile(configuration)!!
-    }.toList()
+fun locateFiles(projectPath: String, configuration: Configuration): List<ResourceFile> {
+    if (configuration.debug) {
+        println("== FILES FOUND ======================================")
+    }
+    return File(projectPath).walkTopDown()
+        .filterIndexed { _, file ->
+            file.validForConfiguration(configuration.normalize())
+        }.map {
+            it.resourceFile(configuration.normalize())!!
+        }.toList()
+}
 
 fun backupFiles(projectPath: String, configuration: Configuration): List<ResourceFile> {
-    val files = locateFiles(projectPath, configuration)
+    val files = locateFiles(projectPath, configuration.normalize())
     files.forEach { resource ->
         resource.backup()
     }

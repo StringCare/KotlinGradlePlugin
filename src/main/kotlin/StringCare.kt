@@ -1,19 +1,23 @@
 import components.*
+import org.gradle.api.DefaultTask
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.internal.plugins.DslObject
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.TaskAction
+import java.io.File
 
 open class StringCare : Plugin<Project> {
 
     companion object {
         @JvmStatic
-        private lateinit var absoluteProjectPath: String
+        internal lateinit var absoluteProjectPath: String
 
-        internal var internalTempDir: String? = null
+        private var internalTempDir: String? = null
         @JvmStatic
         var tempFolder: String
-            get() = internalTempDir?: tempPath()
+            get() = internalTempDir ?: tempPath()
             set(value) {
                 internalTempDir = value
             }
@@ -21,12 +25,19 @@ open class StringCare : Plugin<Project> {
         fun resetFolder() {
             internalTempDir = null
         }
+
+        @JvmStatic
+        internal val moduleMap: MutableMap<String, Configuration> = mutableMapOf()
+
+        @JvmStatic
+        internal var mainModule: String = defaultMainModule
+
+        @JvmStatic
+        internal var debug: Boolean = defaultDebug
     }
 
     private lateinit var project: Project
     private lateinit var extension: Extension
-    private val moduleMap: MutableMap<String, Configuration> = mutableMapOf()
-
 
     override fun apply(target: Project) {
         this@StringCare.project = target
@@ -41,28 +52,36 @@ open class StringCare : Plugin<Project> {
                         moduleMap[module.name!!] = Configuration(module.name).apply {
                             stringFiles.addAll(module.stringFiles)
                             srcFolders.addAll(module.srcFolders)
+                            debug = extension.debug
                         }
                     }
                     module.srcFolders.isNotEmpty() -> {
                         moduleMap[module.name!!] = Configuration(module.name).apply {
                             stringFiles.addAll(defaultConfig().stringFiles)
                             srcFolders.addAll(module.srcFolders)
+                            debug = extension.debug
                         }
                     }
                     module.stringFiles.isNotEmpty() -> {
                         moduleMap[module.name!!] = Configuration(module.name).apply {
                             stringFiles.addAll(module.stringFiles)
                             srcFolders.addAll(defaultConfig().srcFolders)
+                            debug = extension.debug
                         }
                     }
                 }
             }
+            if (moduleMap.isEmpty()) {
+                moduleMap[defaultMainModule] = defaultConfig().normalize()
+            }
+            this.project.registerTask()
         }
         this.project.gradle.addBuildListener(ExecutionListener(
             debug = extension.debug,
             dataFound = { _, _ ->
                 // nothing to do here
-            }, mergeResourcesStart = { module, variant ->
+            },
+            mergeResourcesStart = { module, variant ->
                 fingerPrint(module, variant, extension.debug) { key ->
                     if ("none" == key) {
                         return@fingerPrint
@@ -98,11 +117,13 @@ open class StringCare : Plugin<Project> {
                     }
                 }
 
-            }, mergeResourcesFinish = { module, _ ->
+            },
+            mergeResourcesFinish = { module, _ ->
                 restoreFiles(absoluteProjectPath, module)
             }
         ))
     }
+
     open class Extension {
         var debug: Boolean = false
         var main_module: String = "app"
@@ -117,7 +138,9 @@ open class StringCare : Plugin<Project> {
     open class Configuration(var name: String?) {
         var stringFiles = mutableListOf<String>()
         var srcFolders = mutableListOf<String>()
+        var debug = false
     }
+
 }
 
 
