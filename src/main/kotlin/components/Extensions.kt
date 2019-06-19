@@ -104,7 +104,7 @@ fun File.validForConfiguration(configuration: Configuration): Boolean {
         }
     }
     if (configuration.debug && excluded().not()) {
-        println("${if (valid) "✔ " else "❌ not"} valid file ${this.absolutePath}")
+        println("${if (valid) "✔ " else "❌  not"} valid file ${this.absolutePath}")
     }
     return valid
 }

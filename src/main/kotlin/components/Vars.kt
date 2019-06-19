@@ -2,7 +2,7 @@ package components
 
 import java.io.File
 
-internal const val version = "3.0"
+internal const val version = "3.1"
 internal const val testProjectName = "KotlinSample"
 internal const val defaultDebug = false
 internal const val defaultMainModule = "app"
