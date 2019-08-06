@@ -1,6 +1,7 @@
 package components
 
 import StringCare
+import StringCare.VariantApplicationId
 import StringCare.Configuration
 import StringCare.Extension
 import groovy.json.StringEscapeUtils
@@ -166,7 +167,9 @@ fun Project.absolutePath(): String = this.file(wrapperWindows).absolutePath.repl
 
 fun Project.createExtension(): Extension {
     val extension = this.extensions.create(extensionName, Extension::class.java)
-    extension.modules = this.container<Configuration>(Configuration::class.java)
+    extension.modules = this.container(Configuration::class.java)
+    extension.buildVariants = this.container(VariantApplicationId::class.java)
+
     StringCare.mainModule = extension.main_module
     StringCare.debug = extension.debug
     return extension

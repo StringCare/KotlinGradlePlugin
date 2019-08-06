@@ -133,12 +133,23 @@ open class StringCare : Plugin<Project> {
             internal set(value) {
                 DslObject(this).extensions.add("modules", value)
             }
+        var buildVariants: NamedDomainObjectContainer<VariantApplicationId>
+            @Suppress("UNCHECKED_CAST")
+            get() = DslObject(this).extensions.getByName("buildVariants") as NamedDomainObjectContainer<VariantApplicationId>
+            internal set(value) {
+                DslObject(this).extensions.add("buildVariants", value)
+            }
     }
 
     open class Configuration(var name: String?) {
         var stringFiles = mutableListOf<String>()
         var srcFolders = mutableListOf<String>()
         var debug = false
+    }
+
+    open class VariantApplicationId(var name: String?) {
+        var applicationId = ""
+        var exclude = false
     }
 
 }

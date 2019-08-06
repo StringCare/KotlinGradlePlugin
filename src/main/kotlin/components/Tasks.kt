@@ -18,9 +18,9 @@ internal fun pluginBuildTask(): String = "${when (getOs()) {
 }} build --exclude-task test"
 
 internal val librarySetupTask = """
-            ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$osxLib out${File.separator}production${File.separator}classes${File.separator}$osxLib &&
-            ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$winLib out${File.separator}production${File.separator}classes${File.separator}$winLib &&
-            ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$osxLib build${File.separator}classes${File.separator}kotlin${File.separator}main${File.separator}$osxLib &&
+            ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$osxLib out${File.separator}production${File.separator}classes${File.separator}$osxLib &
+            ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$winLib out${File.separator}production${File.separator}classes${File.separator}$winLib &
+            ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$osxLib build${File.separator}classes${File.separator}kotlin${File.separator}main${File.separator}$osxLib &
             ${copyCommand()} src${File.separator}main${File.separator}kotlin${File.separator}components${File.separator}jni${File.separator}$winLib build${File.separator}classes${File.separator}kotlin${File.separator}main${File.separator}$winLib
         """.trimIndent()
 
