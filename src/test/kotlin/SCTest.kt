@@ -107,7 +107,8 @@ class SCTest {
                     val obfuscated = obfuscate(
                         "$temp${File.separator}$mainModuleTest",
                         key,
-                        entity
+                        entity,
+                        ""
                     )
                     assert(obfuscated.value != entity.value)
                 }

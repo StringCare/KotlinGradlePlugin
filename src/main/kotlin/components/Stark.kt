@@ -66,7 +66,7 @@ open class Stark {
         }
 
         @JvmStatic
-        external fun obfuscate(mainModule: String, key: String, value: ByteArray): ByteArray
+        external fun obfuscate(mainModule: String, key: String, value: ByteArray, mockId: String): ByteArray
 
         @JvmStatic
         external fun reveal(mainModule: String, key: String, value: ByteArray): ByteArray

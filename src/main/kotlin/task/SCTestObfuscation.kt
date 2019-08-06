@@ -26,7 +26,7 @@ open class SCTestObfuscation : DefaultTask() {
         moduleMap.forEach { entry ->
             var key = ""
             signingReportTask().runCommand { _, result ->
-                key = result.extractFingerprint(entry.value.name!!, variant ?: defaultVariant, debug ?: defaultDebug)
+                key = result.extractFingerprint(entry.value.name, variant ?: defaultVariant, debug ?: defaultDebug)
             }
             println("fingerprint: $key")
             println("variant: ${variant ?: "debug"}")
@@ -51,7 +51,7 @@ open class SCTestObfuscation : DefaultTask() {
                 println(file.file.getContent())
                 println("============================")
             }
-            restoreFiles(absoluteProjectPath, entry.value.name!!)
+            restoreFiles(absoluteProjectPath, entry.value.name)
         }
         println("== END OBFUSCATION ==================================")
 
