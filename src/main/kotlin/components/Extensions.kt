@@ -17,6 +17,7 @@ import task.SCPreview
 import task.SCTestObfuscation
 import java.io.*
 import javax.xml.parsers.DocumentBuilderFactory
+import javax.xml.transform.OutputKeys
 import javax.xml.transform.TransformerFactory
 import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
@@ -157,7 +158,7 @@ fun File.resourceFile(configuration: Configuration): ResourceFile? {
             }
         }
     }
-    return if (valid) ResourceFile(validFile!!, sourceFolder, configuration.name!!) else null
+    return if (valid) ResourceFile(validFile!!, sourceFolder, configuration.name) else null
 }
 
 fun Project.absolutePath(): String = this.file(wrapperWindows).absolutePath.replace(
@@ -168,7 +169,7 @@ fun Project.absolutePath(): String = this.file(wrapperWindows).absolutePath.repl
 fun Project.createExtension(): Extension {
     val extension = this.extensions.create(extensionName, Extension::class.java)
     extension.modules = this.container(Configuration::class.java)
-    extension.buildVariants = this.container(VariantApplicationId::class.java)
+    extension.variants = this.container(VariantApplicationId::class.java)
 
     StringCare.mainModule = extension.main_module
     StringCare.debug = extension.debug
@@ -266,9 +267,11 @@ fun File.getXML(): Document {
 fun File.updateXML(document: Document) {
     val output = StringWriter()
     val transformer = TransformerFactory.newInstance().newTransformer()
+    transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
     transformer.transform(DOMSource(document), StreamResult(output))
     val xml = output.toString()
-    FileWriter(this.absolutePath).use { it.write(xml) }
+    this.writeText(xml)
+    //FileWriter(this.absolutePath).use { it.write(xml) }
 }
 
 fun File.removeAttributes() {
@@ -279,7 +282,8 @@ fun File.removeAttributes() {
         .replace("containsHtml=\"false\"", "")
         .replace("androidTreatment=\"true\"", "")
         .replace("androidTreatment=\"false\"", "")
-    FileWriter(this.absolutePath).use { it.write(content) }
+    // FileWriter(this.absolutePath).use { it.write(content) }
+    this.writeText(content)
     updateXML(this.getXML())
 }
 

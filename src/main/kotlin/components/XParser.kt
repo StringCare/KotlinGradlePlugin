@@ -80,7 +80,7 @@ fun parseXML(file: File): List<StringEntity> {
     return entities
 }
 
-fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean) {
+fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean, mockId: String = "") {
     val stringEntities = parseXML(file)
     if (debug) {
         PrintUtils.print(null, file.getContent(), true)
@@ -94,7 +94,7 @@ fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean) {
             it.tag == "string" && it.index == i
         }
         entity?.let {
-            node.textContent = obfuscate(mainModule, key, it).value
+            node.textContent = obfuscate(mainModule, key, it, mockId).value
         }
     }
 
@@ -105,12 +105,13 @@ fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean) {
     }
 }
 
-fun obfuscate(mainModule: String, key: String, entity: StringEntity): StringEntity {
+fun obfuscate(mainModule: String, key: String, entity: StringEntity, mockId: String = ""): StringEntity {
     val obfuscation = Stark.obfuscate(
         mainModule, key, when (entity.androidTreatment) {
             true -> entity.value.androidTreatment()
             false -> entity.value.unescape()
-        }.toByteArray()
+        }.toByteArray(),
+        mockId
     ).toReadableString()
     return StringEntity(entity.name, entity.attributes, obfuscation, entity.tag, entity.index, entity.androidTreatment)
 }

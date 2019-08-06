@@ -1,12 +1,8 @@
 import components.*
-import org.gradle.api.DefaultTask
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.internal.plugins.DslObject
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.TaskAction
-import java.io.File
 
 open class StringCare : Plugin<Project> {
 
@@ -49,21 +45,21 @@ open class StringCare : Plugin<Project> {
             extension.modules.forEach { module ->
                 when {
                     module.stringFiles.isNotEmpty() && module.srcFolders.isNotEmpty() -> {
-                        moduleMap[module.name!!] = Configuration(module.name).apply {
+                        moduleMap[module.name] = Configuration(module.name).apply {
                             stringFiles.addAll(module.stringFiles)
                             srcFolders.addAll(module.srcFolders)
                             debug = extension.debug
                         }
                     }
                     module.srcFolders.isNotEmpty() -> {
-                        moduleMap[module.name!!] = Configuration(module.name).apply {
+                        moduleMap[module.name] = Configuration(module.name).apply {
                             stringFiles.addAll(defaultConfig().stringFiles)
                             srcFolders.addAll(module.srcFolders)
                             debug = extension.debug
                         }
                     }
                     module.stringFiles.isNotEmpty() -> {
-                        moduleMap[module.name!!] = Configuration(module.name).apply {
+                        moduleMap[module.name] = Configuration(module.name).apply {
                             stringFiles.addAll(module.stringFiles)
                             srcFolders.addAll(defaultConfig().srcFolders)
                             debug = extension.debug
@@ -88,15 +84,26 @@ open class StringCare : Plugin<Project> {
                     }
                     when {
                         moduleMap.containsKey(module) -> {
+                            val variantOrFlavor = extension.variants.find {
+                                variant.toLowerCase().contains(it.name.toLowerCase())
+                            }
+                            if (variantOrFlavor != null && variantOrFlavor.skip) {
+                                PrintUtils.print(module, "Skipping $variant")
+                                return@fingerPrint
+                            }
+
                             PrintUtils.print(module, "$variant:$key")
                             PrintUtils.print(module, backupStringRes)
                             moduleMap[module]?.let { configuration ->
                                 backupFiles(absoluteProjectPath, configuration)
                             }
+
                             moduleMap[module]?.let { configuration ->
                                 val files = locateFiles(absoluteProjectPath, configuration)
                                 files.forEach { file ->
-                                    modifyXML(file.file, extension.main_module, key, extension.debug)
+                                    modifyXML(file.file, extension.main_module, key, extension.debug,
+                                        variantOrFlavor?.applicationId ?: ""
+                                    )
                                 }
                             }
                             PrintUtils.print(module, obfuscateStringRes)
@@ -118,7 +125,13 @@ open class StringCare : Plugin<Project> {
                 }
 
             },
-            mergeResourcesFinish = { module, _ ->
+            mergeResourcesFinish = { module, variant ->
+                val variantOrFlavor = extension.variants.find {
+                    variant.toLowerCase().contains(it.name.toLowerCase())
+                }
+                if (variantOrFlavor != null && variantOrFlavor.skip) {
+                    return@ExecutionListener
+                }
                 restoreFiles(absoluteProjectPath, module)
             }
         ))
@@ -133,23 +146,23 @@ open class StringCare : Plugin<Project> {
             internal set(value) {
                 DslObject(this).extensions.add("modules", value)
             }
-        var buildVariants: NamedDomainObjectContainer<VariantApplicationId>
+        var variants: NamedDomainObjectContainer<VariantApplicationId>
             @Suppress("UNCHECKED_CAST")
-            get() = DslObject(this).extensions.getByName("buildVariants") as NamedDomainObjectContainer<VariantApplicationId>
+            get() = DslObject(this).extensions.getByName("variants") as NamedDomainObjectContainer<VariantApplicationId>
             internal set(value) {
-                DslObject(this).extensions.add("buildVariants", value)
+                DslObject(this).extensions.add("variants", value)
             }
     }
 
-    open class Configuration(var name: String?) {
+    open class Configuration(var name: String) {
         var stringFiles = mutableListOf<String>()
         var srcFolders = mutableListOf<String>()
         var debug = false
     }
 
-    open class VariantApplicationId(var name: String?) {
+    open class VariantApplicationId(var name: String) {
         var applicationId = ""
-        var exclude = false
+        var skip = false
     }
 
 }
