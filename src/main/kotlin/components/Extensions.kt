@@ -5,6 +5,7 @@ import StringCare.VariantApplicationId
 import StringCare.Configuration
 import StringCare.Extension
 import groovy.json.StringEscapeUtils
+import models.AssetsFile
 import models.ResourceFile
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -74,9 +75,9 @@ fun String.androidTreatment(): String {
     return values.joinToString(separator = " ")
 }
 
-fun File.validForConfiguration(configuration: Configuration): Boolean {
+fun File.validForXMLConfiguration(configuration: Configuration): Boolean {
     var valid = this.absolutePath.contains("${File.separator}${configuration.name}${File.separator}")
-            && excluded().not()
+            && excludedForXML().not()
     if (valid) {
         valid = false
         configuration.srcFolders.forEach { folder ->
@@ -105,19 +106,43 @@ fun File.validForConfiguration(configuration: Configuration): Boolean {
             }
         }
     }
-    if (configuration.debug && excluded().not()) {
+    if (configuration.debug && excludedForXML().not()) {
         println("${if (valid) "✔ " else "❌  not"} valid file ${this.absolutePath}")
     }
     return valid
 }
 
-fun File.excluded(): Boolean {
-    val exclude = listOf(
-        "/build/",
-        "/.git/",
-        "/.gradle/",
-        "/gradle/"
-    )
+fun File.validForAssetsConfiguration(configuration: Configuration): Boolean {
+    var valid = this.absolutePath.contains("${File.separator}${configuration.name}${File.separator}")
+            && excludedForAssets().not()
+    if (valid) {
+        valid = false
+        if (configuration.assetsFiles.isEmpty()) {
+            valid = true
+        } else {
+            configuration.assetsFiles.forEach { file ->
+                if (this.absolutePath.normalizePath().endsWith("${File.separator}$file".normalizePath())
+                    || (file.contains("*.")
+                        && this.absolutePath.normalizePath().endsWith(file.replace("*","")))) {
+                    valid = true
+                }
+            }
+        }
+    }
+    if (configuration.debug && excludedForAssets().not()) {
+        println("${if (valid) "✔ " else "❌  not"} valid file ${this.absolutePath}")
+    }
+    return valid
+}
+
+val exclude = listOf(
+    "/build/",
+    "/.git/",
+    "/.gradle/",
+    "/gradle/"
+)
+
+fun File.excludedForXML(): Boolean {
     var valid = true
     exclude.forEach { value ->
         when {
@@ -125,6 +150,16 @@ fun File.excluded(): Boolean {
         }
     }
     return (valid && this.isDirectory.not() && this.absolutePath.contains(".xml")).not()
+}
+
+fun File.excludedForAssets(): Boolean {
+    var valid = true
+    exclude.forEach { value ->
+        when {
+            this.absolutePath.contains(value.normalizePath()) -> valid = false
+        }
+    }
+    return (valid && this.isDirectory.not() && this.absolutePath.contains("${File.separator}assets${File.separator}")).not()
 }
 
 fun File.resourceFile(configuration: Configuration): ResourceFile? {
@@ -159,6 +194,44 @@ fun File.resourceFile(configuration: Configuration): ResourceFile? {
         }
     }
     return if (valid) ResourceFile(validFile!!, sourceFolder, configuration.name) else null
+}
+
+fun File.assetsFile(configuration: Configuration): AssetsFile? {
+    var sourceFolder = ""
+    var validFile: File? = null
+    var valid = false
+    configuration.srcFolders.forEach { folder ->
+        if (this.absolutePath.contains(
+                "${File.separator}$folder${File.separator}".replace(
+                    "${File.separator}${File.separator}",
+                    File.separator
+                )
+            )
+        ) {
+            sourceFolder = folder
+            valid = true
+        }
+    }
+    if (valid) {
+        valid = false
+        if (configuration.assetsFiles.isEmpty()) {
+            valid = true
+            validFile = this
+        } else {
+            configuration.assetsFiles.forEach { file ->
+                if (this.absolutePath.normalizePath().endsWith("${File.separator}$file".normalizePath())
+                    || (file.contains("*.")
+                            && this.absolutePath.normalizePath().endsWith(file.replace("*","")))) {
+                    valid = true
+                    validFile = this
+                }
+            }
+        }
+    }
+    if (configuration.debug && excludedForAssets().not()) {
+        println(if (valid) validFile?.getContent() else "")
+    }
+    return if (valid) AssetsFile(validFile!!, sourceFolder, configuration.name) else null
 }
 
 fun Project.absolutePath(): String = this.file(wrapperWindows).absolutePath.replace(

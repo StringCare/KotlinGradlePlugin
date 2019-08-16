@@ -155,6 +155,7 @@ open class StringCare : Plugin<Project> {
     }
 
     open class Configuration(var name: String) {
+        var assetsFiles = mutableListOf<String>()
         var stringFiles = mutableListOf<String>()
         var srcFolders = mutableListOf<String>()
         var debug = false

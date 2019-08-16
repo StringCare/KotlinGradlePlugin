@@ -8,11 +8,11 @@ import java.io.File
 
 fun locateFiles(projectPath: String, configuration: Configuration): List<ResourceFile> {
     if (configuration.debug) {
-        println("== FILES FOUND ======================================")
+        println("== RESOURCE FILES FOUND ======================================")
     }
     return File(projectPath).walkTopDown()
         .filterIndexed { _, file ->
-            file.validForConfiguration(configuration.normalize())
+            file.validForXMLConfiguration(configuration.normalize())
         }.map {
             it.resourceFile(configuration.normalize())!!
         }.toList()
