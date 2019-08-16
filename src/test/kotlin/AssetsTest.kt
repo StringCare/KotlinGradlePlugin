@@ -1,8 +1,6 @@
 import components.*
-import models.StringEntity
 import org.junit.Before
 import org.junit.Test
-import utils.modifyForTest
 import java.io.File
 
 class AssetsTest {
@@ -29,169 +27,91 @@ class AssetsTest {
         StringCare.resetFolder()
     }
 
-    /*
     @Test
-    fun `05 - (PLUGIN) backup string files`() {
+    fun `02 - (PLUGIN) backup assets files`() {
         val temp = tempPath()
         prepareTask(temp).runCommand { _, _ ->
-            assert(backupFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty())
+            assert(backupAssetsFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty())
         }
         StringCare.resetFolder()
     }
 
     @Test
-    fun `06 - (PLUGIN) restore string files`() {
+    fun `03 - (PLUGIN) restore assets files`() {
         val temp = tempPath()
         prepareTask(temp).runCommand { _, report ->
             println(report)
             assert(
-                restoreFiles("$temp${File.separator}$testProjectName", defaultMainModule).isEmpty()
+                restoreAssetsFiles("$temp${File.separator}$testProjectName", defaultMainModule).isEmpty()
             )
             assert(
-                backupFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty()
+                backupAssetsFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty()
             )
             assert(
-                restoreFiles("$temp${File.separator}$testProjectName", defaultMainModule).isNotEmpty()
+                restoreAssetsFiles("$temp${File.separator}$testProjectName", defaultMainModule).isNotEmpty()
             )
         }
     }
 
     @Test
-    fun `07 - (PLUGIN) xml parsing`() {
+    fun `04 - (PLUGIN) asset obfuscation`() {
         val temp = tempPath()
-        prepareTask(temp).runCommand { _, report ->
+        signingReportTask(temp).runCommand { _, report ->
             println(report)
-            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
+            val key = report.extractFingerprint()
+            println(key)
+            assert(key.isNotEmpty())
+            val files = locateAssetsFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach {
-                assert(parseXML(it.file).isNotEmpty())
+                println("-------------------------------------------------------")
+                val original = it.file.getContent()
+                println("original: \n $original")
+                obfuscateFile(
+                    "$temp${File.separator}$mainModuleTest",
+                    key,
+                    it.file
+                )
+                val obfuscated = it.file.getContent()
+                println("obfuscated: \n $obfuscated")
+                assert(original != obfuscated)
             }
         }
     }
 
     @Test
-    fun `08 - (PLUGIN) obfuscate string values`() {
+    fun `05 - (PLUGIN) asset reveal`() {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
             val key = report.extractFingerprint()
             println(key)
             assert(key.isNotEmpty())
-            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
-            files.forEach { file ->
-                val entities = parseXML(file.file)
-                entities.forEach { entity ->
-                    val obfuscated = obfuscate(
-                        "$temp${File.separator}$mainModuleTest",
-                        key,
-                        entity,
-                        ""
-                    )
-                    assert(obfuscated.value != entity.value)
-                }
+            val files = locateAssetsFiles("$temp${File.separator}$testProjectName", configuration)
+            files.forEach {
+                println("-------------------------------------------------------")
+                val original = it.file.getContent()
+                println("original: \n $original")
+                obfuscateFile(
+                    "$temp${File.separator}$mainModuleTest",
+                    key,
+                    it.file
+                )
+                val obfuscated = it.file.getContent()
+                println("obfuscated: \n $obfuscated")
+                assert(original != obfuscated)
+                revealFile(
+                    "$temp${File.separator}$mainModuleTest",
+                    key,
+                    it.file
+                )
+                val reveal = it.file.getContent()
+                println("reveal: \n $reveal")
+                assert(original == reveal)
             }
         }
     }
 
-    @Test
-    fun `09 - (PLUGIN) obfuscate and reveal string values`() {
-        val temp = tempPath()
-        signingReportTask(temp).runCommand { _, report ->
-            println(report)
-            val key = report.extractFingerprint()
-            println(key)
-            assert(key.isNotEmpty())
-            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
-            files.forEach { file ->
-                val entities = parseXML(file.file)
-                entities.forEach { entity ->
-                    val obfuscated = obfuscate(
-                        "$temp${File.separator}$mainModuleTest",
-                        key,
-                        entity
-                    )
-                    assert(obfuscated.value != entity.value)
-
-                    val original = reveal(
-                        "$temp${File.separator}$mainModuleTest",
-                        key,
-                        obfuscated
-                    )
-
-                    assert(
-                        original.value == when (entity.androidTreatment) {
-                            true -> entity.value.androidTreatment()
-                            else -> entity.value
-                        }
-                    )
-
-                }
-            }
-        }
-    }
-
-    @Test
-    fun `10 - (PLUGIN) obfuscate xml`() {
-        val temp = tempPath()
-        signingReportTask(temp).runCommand { _, report ->
-            println(report)
-            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
-            files.forEach { file ->
-                val entities = parseXML(file.file)
-                assert(entities.isNotEmpty())
-                modifyXML(file.file, "$temp${File.separator}$mainModuleTest", report.extractFingerprint(), true)
-            }
-            val filesObfuscated = locateFiles("$temp${File.separator}$testProjectName", configuration)
-            filesObfuscated.forEach { file ->
-                val entities = parseXML(file.file)
-                assert(entities.isEmpty())
-            }
-        }
-    }
-
-    @Test
-    fun `11 - (PLUGIN) obfuscate, restore and compare xml values with originals`() {
-        val temp = tempPath()
-        signingReportTask(temp).runCommand { _, report ->
-            println(report)
-            val files = backupFiles("$temp${File.separator}$testProjectName", configuration)
-            assert(files.isNotEmpty())
-            files.forEach { file ->
-                val entities = parseXML(file.file)
-                assert(entities.isNotEmpty())
-                modifyXML(file.file, "$temp${File.separator}$mainModuleTest", report.extractFingerprint(), true)
-            }
-            val filesObfuscated = locateFiles("$temp${File.separator}$testProjectName", configuration)
-            filesObfuscated.forEach { file ->
-                val entities = parseXML(file.file)
-                assert(entities.isEmpty())
-            }
-
-            val restoredFiles = restoreFiles("$temp${File.separator}$testProjectName", defaultMainModule)
-            assert(restoredFiles.isNotEmpty())
-
-            val originalEntities = mutableListOf<StringEntity>()
-            files.forEach { file ->
-                originalEntities.addAll(parseXML(file.file))
-            }
-            assert(originalEntities.isNotEmpty())
-
-            val restoredEntities = mutableListOf<StringEntity>()
-            restoredFiles.forEach { file ->
-                restoredEntities.addAll(parseXML(file))
-            }
-            assert(restoredEntities.isNotEmpty())
-
-            originalEntities.forEach { entity ->
-                val eq = restoredEntities.find {
-                    it.name == entity.name
-                }
-                eq?.let {
-                    assert(entity.name == it.name)
-                    assert(entity.value == it.value)
-                }
-            }
-        }
-    }
+   /*
 
     @Test
     fun `12 - (ANDROID COMPILATION) obfuscate xml and build (not real workflow)`() {

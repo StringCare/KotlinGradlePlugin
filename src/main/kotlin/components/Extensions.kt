@@ -295,6 +295,18 @@ fun ResourceFile.backup(): File {
     return backupFile
 }
 
+fun AssetsFile.backup(): File {
+    val cleanPath =
+        "${StringCare.tempFolder}${File.separator}${this.module}${File.separator}${this.sourceFolder}${this.file.absolutePath.split(
+            this.sourceFolder
+        )[1]}"
+            .replace("${File.separator}${File.separator}", File.separator)
+
+    val backupFile = File(cleanPath)
+    this.file.copyTo(backupFile, true)
+    return backupFile
+}
+
 fun File.restore(projectPath: String): File {
     val cleanPath = "$projectPath${File.separator}${this.absolutePath.split(StringCare.tempFolder)[1]}"
         .replace("${File.separator}${File.separator}", File.separator)

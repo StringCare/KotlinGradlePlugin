@@ -95,11 +95,11 @@ open class StringCare : Plugin<Project> {
                             PrintUtils.print(module, "$variant:$key")
                             PrintUtils.print(module, backupStringRes)
                             moduleMap[module]?.let { configuration ->
-                                backupFiles(absoluteProjectPath, configuration)
+                                backupResourceFiles(absoluteProjectPath, configuration)
                             }
 
                             moduleMap[module]?.let { configuration ->
-                                val files = locateFiles(absoluteProjectPath, configuration)
+                                val files = locateResourceFiles(absoluteProjectPath, configuration)
                                 files.forEach { file ->
                                     modifyXML(file.file, extension.main_module, key, extension.debug,
                                         variantOrFlavor?.applicationId ?: ""
@@ -114,9 +114,9 @@ open class StringCare : Plugin<Project> {
                             }
                             PrintUtils.print(module, "$variant:$key")
                             PrintUtils.print(module, backupStringRes)
-                            backupFiles(absoluteProjectPath, defaultConfiguration)
+                            backupResourceFiles(absoluteProjectPath, defaultConfiguration)
                             PrintUtils.print(module, obfuscateStringRes)
-                            val files = locateFiles(absoluteProjectPath, defaultConfiguration)
+                            val files = locateResourceFiles(absoluteProjectPath, defaultConfiguration)
                             files.forEach { file ->
                                 modifyXML(file.file, extension.main_module, key, extension.debug)
                             }
@@ -132,7 +132,7 @@ open class StringCare : Plugin<Project> {
                 if (variantOrFlavor != null && variantOrFlavor.skip) {
                     return@ExecutionListener
                 }
-                restoreFiles(absoluteProjectPath, module)
+                restoreResourceFiles(absoluteProjectPath, module)
             }
         ))
     }

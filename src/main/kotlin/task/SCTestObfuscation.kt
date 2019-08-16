@@ -30,7 +30,7 @@ open class SCTestObfuscation : DefaultTask() {
             }
             println("fingerprint: $key")
             println("variant: ${variant ?: "debug"}")
-            val filesToObfuscate = backupFiles(absoluteProjectPath, entry.value)
+            val filesToObfuscate = backupResourceFiles(absoluteProjectPath, entry.value)
             filesToObfuscate.forEach { file ->
                 val originalEntities = parseXML(file.file)
                 println("============================")
@@ -51,7 +51,7 @@ open class SCTestObfuscation : DefaultTask() {
                 println(file.file.getContent())
                 println("============================")
             }
-            restoreFiles(absoluteProjectPath, entry.value.name)
+            restoreResourceFiles(absoluteProjectPath, entry.value.name)
         }
         println("== END OBFUSCATION ==================================")
 
