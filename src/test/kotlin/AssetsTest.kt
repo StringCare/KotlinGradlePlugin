@@ -22,7 +22,9 @@ class AssetsTest {
     fun `01 - (PLUGIN) locate assets files for default configuration`() {
         val temp = tempPath()
         prepareTask(temp).runCommand { _, _ ->
-            assert(locateAssetsFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty())
+            assert(locateAssetsFiles("$temp${File.separator}$testProjectName", configuration.apply {
+                assetsFiles = mutableListOf("*.json")
+            }).isNotEmpty())
         }
         StringCare.resetFolder()
     }
@@ -31,7 +33,9 @@ class AssetsTest {
     fun `02 - (PLUGIN) backup assets files`() {
         val temp = tempPath()
         prepareTask(temp).runCommand { _, _ ->
-            assert(backupAssetsFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty())
+            assert(backupAssetsFiles("$temp${File.separator}$testProjectName", configuration.apply {
+                assetsFiles = mutableListOf("*.json")
+            }).isNotEmpty())
         }
         StringCare.resetFolder()
     }
@@ -45,7 +49,9 @@ class AssetsTest {
                 restoreAssetsFiles("$temp${File.separator}$testProjectName", defaultMainModule).isEmpty()
             )
             assert(
-                backupAssetsFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty()
+                backupAssetsFiles("$temp${File.separator}$testProjectName", configuration.apply {
+                    assetsFiles = mutableListOf("*.json")
+                }).isNotEmpty()
             )
             assert(
                 restoreAssetsFiles("$temp${File.separator}$testProjectName", defaultMainModule).isNotEmpty()
@@ -61,7 +67,12 @@ class AssetsTest {
             val key = report.extractFingerprint()
             println(key)
             assert(key.isNotEmpty())
-            val files = locateAssetsFiles("$temp${File.separator}$testProjectName", configuration)
+            val files = locateAssetsFiles(
+                "$temp${File.separator}$testProjectName",
+                configuration.apply {
+                    assetsFiles = mutableListOf("*.json")
+                })
+            assert(files.isNotEmpty())
             files.forEach {
                 println("-------------------------------------------------------")
                 val original = it.file.getContent()
@@ -86,7 +97,12 @@ class AssetsTest {
             val key = report.extractFingerprint()
             println(key)
             assert(key.isNotEmpty())
-            val files = locateAssetsFiles("$temp${File.separator}$testProjectName", configuration)
+            val files = locateAssetsFiles(
+                "$temp${File.separator}$testProjectName",
+                configuration.apply {
+                    assetsFiles = mutableListOf("*.json")
+                })
+            assert(files.isNotEmpty())
             files.forEach {
                 println("-------------------------------------------------------")
                 val original = it.file.getContent()

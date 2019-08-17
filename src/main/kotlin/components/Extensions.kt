@@ -1,9 +1,7 @@
 package components
 
 import StringCare
-import StringCare.VariantApplicationId
-import StringCare.Configuration
-import StringCare.Extension
+import StringCare.*
 import groovy.json.StringEscapeUtils
 import models.AssetsFile
 import models.ResourceFile
@@ -16,7 +14,10 @@ import org.w3c.dom.Node
 import org.xml.sax.InputSource
 import task.SCPreview
 import task.SCTestObfuscation
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.InputStreamReader
+import java.io.StringWriter
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.OutputKeys
 import javax.xml.transform.TransformerFactory
@@ -117,15 +118,16 @@ fun File.validForAssetsConfiguration(configuration: Configuration): Boolean {
             && excludedForAssets().not()
     if (valid) {
         valid = false
-        if (configuration.assetsFiles.isEmpty()) {
-            valid = true
-        } else {
-            configuration.assetsFiles.forEach { file ->
-                if (this.absolutePath.normalizePath().endsWith("${File.separator}$file".normalizePath())
-                    || (file.contains("*.")
-                        && this.absolutePath.normalizePath().endsWith(file.replace("*","")))) {
-                    valid = true
-                }
+        configuration.assetsFiles.forEach { file ->
+            if (this.absolutePath.endsWith(
+                    "${File.separator}$file".replace(
+                        "${File.separator}${File.separator}",
+                        File.separator
+                    )
+                )
+                || (file.contains("*.") && this.absolutePath.endsWith(file.replace("*", "")))
+            ) {
+                valid = true
             }
         }
     }
@@ -138,6 +140,7 @@ fun File.validForAssetsConfiguration(configuration: Configuration): Boolean {
 val exclude = listOf(
     "/build/",
     "/.git/",
+    "/.idea/",
     "/.gradle/",
     "/gradle/"
 )
@@ -214,22 +217,30 @@ fun File.assetsFile(configuration: Configuration): AssetsFile? {
     }
     if (valid) {
         valid = false
-        if (configuration.assetsFiles.isEmpty()) {
-            valid = true
-            validFile = this
-        } else {
-            configuration.assetsFiles.forEach { file ->
-                if (this.absolutePath.normalizePath().endsWith("${File.separator}$file".normalizePath())
-                    || (file.contains("*.")
-                            && this.absolutePath.normalizePath().endsWith(file.replace("*","")))) {
-                    valid = true
-                    validFile = this
-                }
+        configuration.assetsFiles.forEach { file ->
+            if (this.absolutePath.endsWith(
+                    "${File.separator}$file".replace(
+                        "${File.separator}${File.separator}",
+                        File.separator
+                    )
+                )
+                || (file.contains("*.") && this.absolutePath.endsWith(file.replace("*", "")))
+            ) {
+                valid = true
+                validFile = this
             }
         }
     }
     if (configuration.debug && excludedForAssets().not()) {
-        println(if (valid) validFile?.getContent() else "")
+        println(
+            "${when {
+                valid -> "valid file"
+                else -> ""
+            }}${when {
+                validFile != null -> validFile?.getContent()
+                else -> "the file is null"
+            }}"
+        )
     }
     return if (valid) AssetsFile(validFile!!, sourceFolder, configuration.name) else null
 }
@@ -393,6 +404,14 @@ fun Task.onMergeResourcesFinish(): Boolean = this.name.contains(merge)
         && this.name.contains(resources)
         && !this.name.contains(test)
 
+fun Task.onMergeAssetsStarts(): Boolean = this.name.contains(generate)
+        && this.name.contains(assets)
+        && !this.name.contains(test)
+
+fun Task.onMergeAssetsFinish(): Boolean = this.name.contains(merge)
+        && this.name.contains(assets)
+        && !this.name.contains(test)
+
 fun Task.dataFoundVariant(): String = this.name.substring(pre.length)
     .substring(0, this.name.substring(pre.length).length - build.length)
 
@@ -401,6 +420,12 @@ fun Task.onMergeResourcesStartsVariant(): String = this.name.substring(merge.len
 
 fun Task.onMergeResourcesFinishVariant(): String = this.name.substring(merge.length)
     .substring(0, this.name.substring(merge.length).length - resources.length)
+
+fun Task.onMergeAssetsStartsVariant(): String = this.name.substring(generate.length)
+    .substring(0, this.name.substring(generate.length).length - assets.length)
+
+fun Task.onMergeAssetsFinishVariant(): String = this.name.substring(merge.length)
+    .substring(0, this.name.substring(merge.length).length - assets.length)
 
 fun <R : Any> R.logger(): Lazy<Logger> {
     return lazy { LoggerFactory.getLogger(this.javaClass) }
