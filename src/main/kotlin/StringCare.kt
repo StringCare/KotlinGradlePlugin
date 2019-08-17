@@ -159,7 +159,8 @@ open class StringCare : Plugin<Project> {
                                     obfuscateFile(
                                         extension.main_module,
                                         key,
-                                        file.file
+                                        file.file,
+                                        variantOrFlavor?.applicationId ?: ""
                                     )
                                     if (extension.debug) {
                                         PrintUtils.print(null, file.file.getContent())
