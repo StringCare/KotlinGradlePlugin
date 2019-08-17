@@ -1,10 +1,9 @@
 package components
 
 import StringCare
-import StringCare.VariantApplicationId
-import StringCare.Configuration
-import StringCare.Extension
+import StringCare.*
 import groovy.json.StringEscapeUtils
+import models.AssetsFile
 import models.ResourceFile
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -15,7 +14,10 @@ import org.w3c.dom.Node
 import org.xml.sax.InputSource
 import task.SCPreview
 import task.SCTestObfuscation
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.InputStreamReader
+import java.io.StringWriter
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.OutputKeys
 import javax.xml.transform.TransformerFactory
@@ -74,9 +76,9 @@ fun String.androidTreatment(): String {
     return values.joinToString(separator = " ")
 }
 
-fun File.validForConfiguration(configuration: Configuration): Boolean {
+fun File.validForXMLConfiguration(configuration: Configuration): Boolean {
     var valid = this.absolutePath.contains("${File.separator}${configuration.name}${File.separator}")
-            && excluded().not()
+            && excludedForXML().not()
     if (valid) {
         valid = false
         configuration.srcFolders.forEach { folder ->
@@ -105,19 +107,45 @@ fun File.validForConfiguration(configuration: Configuration): Boolean {
             }
         }
     }
-    if (configuration.debug && excluded().not()) {
+    if (configuration.debug && excludedForXML().not()) {
         println("${if (valid) "✔ " else "❌  not"} valid file ${this.absolutePath}")
     }
     return valid
 }
 
-fun File.excluded(): Boolean {
-    val exclude = listOf(
-        "/build/",
-        "/.git/",
-        "/.gradle/",
-        "/gradle/"
-    )
+fun File.validForAssetsConfiguration(configuration: Configuration): Boolean {
+    var valid = this.absolutePath.contains("${File.separator}${configuration.name}${File.separator}")
+            && excludedForAssets().not()
+    if (valid) {
+        valid = false
+        configuration.assetsFiles.forEach { file ->
+            if (this.absolutePath.endsWith(
+                    "${File.separator}$file".replace(
+                        "${File.separator}${File.separator}",
+                        File.separator
+                    )
+                )
+                || (file.contains("*.") && this.absolutePath.endsWith(file.replace("*", "")))
+            ) {
+                valid = true
+            }
+        }
+    }
+    if (configuration.debug && excludedForAssets().not()) {
+        println("${if (valid) "✔ " else "❌  not"} valid file ${this.absolutePath}")
+    }
+    return valid
+}
+
+val exclude = listOf(
+    "/build/",
+    "/.git/",
+    "/.idea/",
+    "/.gradle/",
+    "/gradle/"
+)
+
+fun File.excludedForXML(): Boolean {
     var valid = true
     exclude.forEach { value ->
         when {
@@ -125,6 +153,16 @@ fun File.excluded(): Boolean {
         }
     }
     return (valid && this.isDirectory.not() && this.absolutePath.contains(".xml")).not()
+}
+
+fun File.excludedForAssets(): Boolean {
+    var valid = true
+    exclude.forEach { value ->
+        when {
+            this.absolutePath.contains(value.normalizePath()) -> valid = false
+        }
+    }
+    return (valid && this.isDirectory.not() && this.absolutePath.contains("${File.separator}assets${File.separator}")).not()
 }
 
 fun File.resourceFile(configuration: Configuration): ResourceFile? {
@@ -159,6 +197,52 @@ fun File.resourceFile(configuration: Configuration): ResourceFile? {
         }
     }
     return if (valid) ResourceFile(validFile!!, sourceFolder, configuration.name) else null
+}
+
+fun File.assetsFile(configuration: Configuration): AssetsFile? {
+    var sourceFolder = ""
+    var validFile: File? = null
+    var valid = false
+    configuration.srcFolders.forEach { folder ->
+        if (this.absolutePath.contains(
+                "${File.separator}$folder${File.separator}".replace(
+                    "${File.separator}${File.separator}",
+                    File.separator
+                )
+            )
+        ) {
+            sourceFolder = folder
+            valid = true
+        }
+    }
+    if (valid) {
+        valid = false
+        configuration.assetsFiles.forEach { file ->
+            if (this.absolutePath.endsWith(
+                    "${File.separator}$file".replace(
+                        "${File.separator}${File.separator}",
+                        File.separator
+                    )
+                )
+                || (file.contains("*.") && this.absolutePath.endsWith(file.replace("*", "")))
+            ) {
+                valid = true
+                validFile = this
+            }
+        }
+    }
+    if (configuration.debug && excludedForAssets().not()) {
+        println(
+            "${when {
+                valid -> "valid file"
+                else -> ""
+            }}${when {
+                validFile != null -> validFile?.getContent()
+                else -> "the file is null"
+            }}"
+        )
+    }
+    return if (valid) AssetsFile(validFile!!, sourceFolder, configuration.name) else null
 }
 
 fun Project.absolutePath(): String = this.file(wrapperWindows).absolutePath.replace(
@@ -211,6 +295,18 @@ fun defaultConfig(): Configuration {
 }
 
 fun ResourceFile.backup(): File {
+    val cleanPath =
+        "${StringCare.tempFolder}${File.separator}${this.module}${File.separator}${this.sourceFolder}${this.file.absolutePath.split(
+            this.sourceFolder
+        )[1]}"
+            .replace("${File.separator}${File.separator}", File.separator)
+
+    val backupFile = File(cleanPath)
+    this.file.copyTo(backupFile, true)
+    return backupFile
+}
+
+fun AssetsFile.backup(): File {
     val cleanPath =
         "${StringCare.tempFolder}${File.separator}${this.module}${File.separator}${this.sourceFolder}${this.file.absolutePath.split(
             this.sourceFolder
@@ -308,6 +404,14 @@ fun Task.onMergeResourcesFinish(): Boolean = this.name.contains(merge)
         && this.name.contains(resources)
         && !this.name.contains(test)
 
+fun Task.onMergeAssetsStarts(): Boolean = this.name.contains(generate)
+        && this.name.contains(assets)
+        && !this.name.contains(test)
+
+fun Task.onMergeAssetsFinish(): Boolean = this.name.contains(merge)
+        && this.name.contains(assets)
+        && !this.name.contains(test)
+
 fun Task.dataFoundVariant(): String = this.name.substring(pre.length)
     .substring(0, this.name.substring(pre.length).length - build.length)
 
@@ -316,6 +420,12 @@ fun Task.onMergeResourcesStartsVariant(): String = this.name.substring(merge.len
 
 fun Task.onMergeResourcesFinishVariant(): String = this.name.substring(merge.length)
     .substring(0, this.name.substring(merge.length).length - resources.length)
+
+fun Task.onMergeAssetsStartsVariant(): String = this.name.substring(generate.length)
+    .substring(0, this.name.substring(generate.length).length - assets.length)
+
+fun Task.onMergeAssetsFinishVariant(): String = this.name.substring(merge.length)
+    .substring(0, this.name.substring(merge.length).length - assets.length)
 
 fun <R : Any> R.logger(): Lazy<Logger> {
     return lazy { LoggerFactory.getLogger(this.javaClass) }

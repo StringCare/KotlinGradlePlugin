@@ -3,7 +3,7 @@ package task
 import StringCare.Companion.absoluteProjectPath
 import StringCare.Companion.moduleMap
 import components.getContent
-import components.locateFiles
+import components.locateResourceFiles
 import components.parseXML
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
@@ -16,7 +16,7 @@ open class SCPreview : DefaultTask() {
         println("Modules (${moduleMap.size})")
 
         moduleMap.forEach { entry ->
-            val files = locateFiles(absoluteProjectPath, entry.value)
+            val files = locateResourceFiles(absoluteProjectPath, entry.value)
             println("Located files(${files.size}) for obfuscating")
             files.forEach { file ->
                 println("- ${file.file.name}")

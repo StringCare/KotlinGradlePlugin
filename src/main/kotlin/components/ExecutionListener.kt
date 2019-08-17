@@ -12,7 +12,9 @@ class ExecutionListener(
     private val debug: Boolean = false,
     val dataFound: (module: String, variant: String) -> Unit,
     val mergeResourcesStart: (module: String, variant: String) -> Unit,
-    val mergeResourcesFinish: (module: String, variant: String) -> Unit
+    val mergeResourcesFinish: (module: String, variant: String) -> Unit,
+    val mergeAssetsStart: (module: String, variant: String) -> Unit,
+    val mergeAssetsFinish: (module: String, variant: String) -> Unit
 ) : BuildListener,
     TaskExecutionListener {
 
@@ -27,6 +29,12 @@ class ExecutionListener(
                 }
                 mergeResourcesStart(it, PrintUtils.uncapitalize(task.onMergeResourcesStartsVariant()))
             }
+            task.onMergeAssetsStarts() -> task.getModuleName()?.let {
+                if (debug) {
+                    PrintUtils.print(it, "Module: $it", true)
+                }
+                mergeAssetsStart(it, PrintUtils.uncapitalize(task.onMergeAssetsStartsVariant()))
+            }
         }
     }
 
@@ -34,6 +42,9 @@ class ExecutionListener(
         when {
             task.onMergeResourcesFinish() -> task.getModuleName()?.let {
                 mergeResourcesFinish(it, PrintUtils.uncapitalize(task.onMergeResourcesFinishVariant()))
+            }
+            task.onMergeAssetsFinish() -> task.getModuleName()?.let {
+                mergeAssetsFinish(it, PrintUtils.uncapitalize(task.onMergeAssetsFinishVariant()))
             }
         }
     }

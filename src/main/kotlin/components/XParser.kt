@@ -6,27 +6,27 @@ import models.SAttribute
 import models.StringEntity
 import java.io.File
 
-fun locateFiles(projectPath: String, configuration: Configuration): List<ResourceFile> {
+fun locateResourceFiles(projectPath: String, configuration: Configuration): List<ResourceFile> {
     if (configuration.debug) {
-        println("== FILES FOUND ======================================")
+        println("== RESOURCE FILES FOUND ======================================")
     }
     return File(projectPath).walkTopDown()
         .filterIndexed { _, file ->
-            file.validForConfiguration(configuration.normalize())
+            file.validForXMLConfiguration(configuration.normalize())
         }.map {
             it.resourceFile(configuration.normalize())!!
         }.toList()
 }
 
-fun backupFiles(projectPath: String, configuration: Configuration): List<ResourceFile> {
-    val files = locateFiles(projectPath, configuration.normalize())
+fun backupResourceFiles(projectPath: String, configuration: Configuration): List<ResourceFile> {
+    val files = locateResourceFiles(projectPath, configuration.normalize())
     files.forEach { resource ->
         resource.backup()
     }
     return files
 }
 
-fun restoreFiles(projectPath: String, module: String): List<File> {
+fun restoreResourceFiles(projectPath: String, module: String): List<File> {
     val resourceFiles = File("${StringCare.tempFolder}${File.separator}$module")
         .walkTopDown().toList().filter { file ->
             !file.isDirectory
@@ -94,7 +94,7 @@ fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean, mockI
             it.tag == "string" && it.index == i
         }
         entity?.let {
-            node.textContent = obfuscate(mainModule, key, it, mockId).value
+            node.textContent = obfuscateStringEntity(mainModule, key, it, mockId).value
         }
     }
 
@@ -105,7 +105,7 @@ fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean, mockI
     }
 }
 
-fun obfuscate(mainModule: String, key: String, entity: StringEntity, mockId: String = ""): StringEntity {
+fun obfuscateStringEntity(mainModule: String, key: String, entity: StringEntity, mockId: String = ""): StringEntity {
     val obfuscation = Stark.obfuscate(
         mainModule, key, when (entity.androidTreatment) {
             true -> entity.value.androidTreatment()
@@ -116,9 +116,9 @@ fun obfuscate(mainModule: String, key: String, entity: StringEntity, mockId: Str
     return StringEntity(entity.name, entity.attributes, obfuscation, entity.tag, entity.index, entity.androidTreatment)
 }
 
-fun reveal(mainModule: String, key: String, entity: StringEntity): StringEntity {
+fun revealStringEntity(mainModule: String, key: String, entity: StringEntity, mockId: String = ""): StringEntity {
     val arr: ByteArray = entity.value.split(", ").map { it.toInt().toByte() }.toByteArray()
-    val original = String(Stark.reveal(mainModule, key, arr))
+    val original = String(Stark.reveal(mainModule, key, arr, mockId))
     return StringEntity(entity.name, entity.attributes, original, entity.tag, entity.index, entity.androidTreatment)
 }
 

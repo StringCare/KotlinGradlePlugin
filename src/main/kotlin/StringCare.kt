@@ -43,32 +43,25 @@ open class StringCare : Plugin<Project> {
 
         this.project.afterEvaluate {
             extension.modules.forEach { module ->
-                when {
-                    module.stringFiles.isNotEmpty() && module.srcFolders.isNotEmpty() -> {
-                        moduleMap[module.name] = Configuration(module.name).apply {
-                            stringFiles.addAll(module.stringFiles)
-                            srcFolders.addAll(module.srcFolders)
-                            debug = extension.debug
-                        }
-                    }
-                    module.srcFolders.isNotEmpty() -> {
-                        moduleMap[module.name] = Configuration(module.name).apply {
-                            stringFiles.addAll(defaultConfig().stringFiles)
-                            srcFolders.addAll(module.srcFolders)
-                            debug = extension.debug
-                        }
-                    }
-                    module.stringFiles.isNotEmpty() -> {
-                        moduleMap[module.name] = Configuration(module.name).apply {
-                            stringFiles.addAll(module.stringFiles)
-                            srcFolders.addAll(defaultConfig().srcFolders)
-                            debug = extension.debug
-                        }
-                    }
+                moduleMap[module.name] = Configuration(module.name).apply {
+                    debug = extension.debug
                 }
-            }
-            if (moduleMap.isEmpty()) {
-                moduleMap[defaultMainModule] = defaultConfig().normalize()
+                if (module.srcFolders.isNotEmpty()) {
+                    moduleMap[module.name]!!.srcFolders.addAll(module.srcFolders)
+                }
+                if (module.stringFiles.isNotEmpty()) {
+                    moduleMap[module.name]!!.stringFiles.addAll(module.stringFiles)
+                }
+                if (module.assetsFiles.isNotEmpty()) {
+                    moduleMap[module.name]!!.assetsFiles.addAll(module.assetsFiles)
+                }
+
+                if (moduleMap[module.name]!!.srcFolders.isEmpty()) {
+                    moduleMap[module.name]!!.srcFolders.addAll(defaultConfig().srcFolders)
+                }
+                if (moduleMap[module.name]!!.stringFiles.isEmpty()) {
+                    moduleMap[module.name]!!.stringFiles.addAll(defaultConfig().stringFiles)
+                }
             }
             this.project.registerTask()
         }
@@ -95,13 +88,14 @@ open class StringCare : Plugin<Project> {
                             PrintUtils.print(module, "$variant:$key")
                             PrintUtils.print(module, backupStringRes)
                             moduleMap[module]?.let { configuration ->
-                                backupFiles(absoluteProjectPath, configuration)
+                                backupResourceFiles(absoluteProjectPath, configuration)
                             }
 
                             moduleMap[module]?.let { configuration ->
-                                val files = locateFiles(absoluteProjectPath, configuration)
+                                val files = locateResourceFiles(absoluteProjectPath, configuration)
                                 files.forEach { file ->
-                                    modifyXML(file.file, extension.main_module, key, extension.debug,
+                                    modifyXML(
+                                        file.file, extension.main_module, key, extension.debug,
                                         variantOrFlavor?.applicationId ?: ""
                                     )
                                 }
@@ -114,9 +108,9 @@ open class StringCare : Plugin<Project> {
                             }
                             PrintUtils.print(module, "$variant:$key")
                             PrintUtils.print(module, backupStringRes)
-                            backupFiles(absoluteProjectPath, defaultConfiguration)
+                            backupResourceFiles(absoluteProjectPath, defaultConfiguration)
                             PrintUtils.print(module, obfuscateStringRes)
-                            val files = locateFiles(absoluteProjectPath, defaultConfiguration)
+                            val files = locateResourceFiles(absoluteProjectPath, defaultConfiguration)
                             files.forEach { file ->
                                 modifyXML(file.file, extension.main_module, key, extension.debug)
                             }
@@ -126,14 +120,70 @@ open class StringCare : Plugin<Project> {
 
             },
             mergeResourcesFinish = { module, variant ->
+                PrintUtils.print(module, restoreStringRes)
                 val variantOrFlavor = extension.variants.find {
                     variant.toLowerCase().contains(it.name.toLowerCase())
                 }
                 if (variantOrFlavor != null && variantOrFlavor.skip) {
                     return@ExecutionListener
                 }
-                restoreFiles(absoluteProjectPath, module)
+                restoreResourceFiles(absoluteProjectPath, module)
+            },
+            mergeAssetsStart = { module, variant ->
+                fingerPrint(module, variant, extension.debug) { key ->
+                    if ("none" == key) {
+                        return@fingerPrint
+                    }
+                    when {
+                        moduleMap.containsKey(module) -> {
+                            val variantOrFlavor = extension.variants.find {
+                                variant.toLowerCase().contains(it.name.toLowerCase())
+                            }
+                            if (variantOrFlavor != null && variantOrFlavor.skip) {
+                                PrintUtils.print(module, "Skipping $variant")
+                                return@fingerPrint
+                            }
+
+                            PrintUtils.print(module, "$variant:$key")
+                            PrintUtils.print(module, backupAssets)
+                            moduleMap[module]?.let { configuration ->
+                                backupAssetsFiles(absoluteProjectPath, configuration)
+                            }
+
+                            moduleMap[module]?.let { configuration ->
+                                val files = locateAssetsFiles(absoluteProjectPath, configuration)
+                                files.forEach { file ->
+                                    if (extension.debug) {
+                                        PrintUtils.print(null, file.file.getContent())
+                                    }
+                                    obfuscateFile(
+                                        extension.main_module,
+                                        key,
+                                        file.file,
+                                        variantOrFlavor?.applicationId ?: ""
+                                    )
+                                    if (extension.debug) {
+                                        PrintUtils.print(null, file.file.getContent())
+                                    }
+                                }
+                            }
+                            PrintUtils.print(module, obfuscateAssets)
+                        }
+                    }
+                }
+
+            },
+            mergeAssetsFinish = { module, variant ->
+                PrintUtils.print(module, restoreAssets)
+                val variantOrFlavor = extension.variants.find {
+                    variant.toLowerCase().contains(it.name.toLowerCase())
+                }
+                if (variantOrFlavor != null && variantOrFlavor.skip) {
+                    return@ExecutionListener
+                }
+                restoreAssetsFiles(absoluteProjectPath, module)
             }
+
         ))
     }
 
@@ -155,6 +205,7 @@ open class StringCare : Plugin<Project> {
     }
 
     open class Configuration(var name: String) {
+        var assetsFiles = mutableListOf<String>()
         var stringFiles = mutableListOf<String>()
         var srcFolders = mutableListOf<String>()
         var debug = false

@@ -49,7 +49,7 @@ class SCTest {
     fun `04 - (PLUGIN) locate string files for default configuration`() {
         val temp = tempPath()
         prepareTask(temp).runCommand { _, _ ->
-            assert(locateFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty())
+            assert(locateResourceFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty())
         }
         StringCare.resetFolder()
     }
@@ -58,7 +58,7 @@ class SCTest {
     fun `05 - (PLUGIN) backup string files`() {
         val temp = tempPath()
         prepareTask(temp).runCommand { _, _ ->
-            assert(backupFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty())
+            assert(backupResourceFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty())
         }
         StringCare.resetFolder()
     }
@@ -69,13 +69,13 @@ class SCTest {
         prepareTask(temp).runCommand { _, report ->
             println(report)
             assert(
-                restoreFiles("$temp${File.separator}$testProjectName", defaultMainModule).isEmpty()
+                restoreResourceFiles("$temp${File.separator}$testProjectName", defaultMainModule).isEmpty()
             )
             assert(
-                backupFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty()
+                backupResourceFiles("$temp${File.separator}$testProjectName", configuration).isNotEmpty()
             )
             assert(
-                restoreFiles("$temp${File.separator}$testProjectName", defaultMainModule).isNotEmpty()
+                restoreResourceFiles("$temp${File.separator}$testProjectName", defaultMainModule).isNotEmpty()
             )
         }
     }
@@ -85,7 +85,7 @@ class SCTest {
         val temp = tempPath()
         prepareTask(temp).runCommand { _, report ->
             println(report)
-            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
+            val files = locateResourceFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach {
                 assert(parseXML(it.file).isNotEmpty())
             }
@@ -100,11 +100,11 @@ class SCTest {
             val key = report.extractFingerprint()
             println(key)
             assert(key.isNotEmpty())
-            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
+            val files = locateResourceFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 entities.forEach { entity ->
-                    val obfuscated = obfuscate(
+                    val obfuscated = obfuscateStringEntity(
                         "$temp${File.separator}$mainModuleTest",
                         key,
                         entity,
@@ -124,18 +124,18 @@ class SCTest {
             val key = report.extractFingerprint()
             println(key)
             assert(key.isNotEmpty())
-            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
+            val files = locateResourceFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 entities.forEach { entity ->
-                    val obfuscated = obfuscate(
+                    val obfuscated = obfuscateStringEntity(
                         "$temp${File.separator}$mainModuleTest",
                         key,
                         entity
                     )
                     assert(obfuscated.value != entity.value)
 
-                    val original = reveal(
+                    val original = revealStringEntity(
                         "$temp${File.separator}$mainModuleTest",
                         key,
                         obfuscated
@@ -158,13 +158,13 @@ class SCTest {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
-            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
+            val files = locateResourceFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isNotEmpty())
                 modifyXML(file.file, "$temp${File.separator}$mainModuleTest", report.extractFingerprint(), true)
             }
-            val filesObfuscated = locateFiles("$temp${File.separator}$testProjectName", configuration)
+            val filesObfuscated = locateResourceFiles("$temp${File.separator}$testProjectName", configuration)
             filesObfuscated.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isEmpty())
@@ -177,20 +177,20 @@ class SCTest {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
-            val files = backupFiles("$temp${File.separator}$testProjectName", configuration)
+            val files = backupResourceFiles("$temp${File.separator}$testProjectName", configuration)
             assert(files.isNotEmpty())
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isNotEmpty())
                 modifyXML(file.file, "$temp${File.separator}$mainModuleTest", report.extractFingerprint(), true)
             }
-            val filesObfuscated = locateFiles("$temp${File.separator}$testProjectName", configuration)
+            val filesObfuscated = locateResourceFiles("$temp${File.separator}$testProjectName", configuration)
             filesObfuscated.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isEmpty())
             }
 
-            val restoredFiles = restoreFiles("$temp${File.separator}$testProjectName", defaultMainModule)
+            val restoredFiles = restoreResourceFiles("$temp${File.separator}$testProjectName", defaultMainModule)
             assert(restoredFiles.isNotEmpty())
 
             val originalEntities = mutableListOf<StringEntity>()
@@ -222,7 +222,7 @@ class SCTest {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
-            val files = locateFiles("$temp${File.separator}$testProjectName", configuration)
+            val files = locateResourceFiles("$temp${File.separator}$testProjectName", configuration)
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isNotEmpty())
@@ -233,7 +233,7 @@ class SCTest {
                     true
                 )
             }
-            val filesObfuscated = locateFiles(
+            val filesObfuscated = locateResourceFiles(
                 "$temp${File.separator}$testProjectName",
                 configuration
             )
