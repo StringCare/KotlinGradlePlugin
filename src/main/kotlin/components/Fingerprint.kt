@@ -75,7 +75,13 @@ private class Fingerprint {
 /**
  * Gets the signing report trace and extracts the fingerprint
  */
-fun fingerPrint(module: String, variant: String, debug: Boolean, keyFound: (key: String) -> Unit) {
+fun fingerPrint(variantMap: MutableMap<String, StringCare.VariantApplicationId>, module: String, variant: String, debug: Boolean, keyFound: (key: String) -> Unit) {
+    if (variantMap.containsKey(variant)) {
+        if (variantMap[variant]!!.mockedFingerprint.isNotEmpty()) {
+            keyFound(variantMap[variant]!!.mockedFingerprint)
+            return
+        }
+    }
     signingReportTask().runCommand { _, report ->
         keyFound(report.extractFingerprint(module, variant, debug))
     }

@@ -26,6 +26,9 @@ open class StringCare : Plugin<Project> {
         internal val moduleMap: MutableMap<String, Configuration> = mutableMapOf()
 
         @JvmStatic
+        internal val variantMap: MutableMap<String, VariantApplicationId> = mutableMapOf()
+
+        @JvmStatic
         internal var mainModule: String = defaultMainModule
 
         @JvmStatic
@@ -63,6 +66,13 @@ open class StringCare : Plugin<Project> {
                     moduleMap[module.name]!!.stringFiles.addAll(defaultConfig().stringFiles)
                 }
             }
+            extension.variants.forEach { variant ->
+                variantMap[variant.name] = VariantApplicationId(variant.name).apply {
+                    applicationId = variant.applicationId
+                    mockedFingerprint = variant.mockedFingerprint
+                    skip = variant.skip
+                }
+            }
             this.project.registerTask()
         }
         this.project.gradle.addBuildListener(ExecutionListener(
@@ -71,7 +81,7 @@ open class StringCare : Plugin<Project> {
                 // nothing to do here
             },
             mergeResourcesStart = { module, variant ->
-                fingerPrint(module, variant, extension.debug) { key ->
+                fingerPrint(variantMap, module, variant, extension.debug) { key ->
                     if ("none" == key) {
                         return@fingerPrint
                     }
@@ -130,7 +140,7 @@ open class StringCare : Plugin<Project> {
                 restoreResourceFiles(absoluteProjectPath, module)
             },
             mergeAssetsStart = { module, variant ->
-                fingerPrint(module, variant, extension.debug) { key ->
+                fingerPrint(variantMap, module, variant, extension.debug) { key ->
                     if ("none" == key) {
                         return@fingerPrint
                     }
@@ -213,6 +223,7 @@ open class StringCare : Plugin<Project> {
 
     open class VariantApplicationId(var name: String) {
         var applicationId = ""
+        var mockedFingerprint = ""
         var skip = false
     }
 
