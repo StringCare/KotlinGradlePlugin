@@ -82,9 +82,6 @@ open class StringCare : Plugin<Project> {
             },
             mergeResourcesStart = { module, variant ->
                 fingerPrint(variantMap, module, variant, extension.debug) { key ->
-                    if ("none" == key) {
-                        return@fingerPrint
-                    }
                     when {
                         moduleMap.containsKey(module) -> {
                             val variantOrFlavor = extension.variants.find {
@@ -92,6 +89,11 @@ open class StringCare : Plugin<Project> {
                             }
                             if (variantOrFlavor != null && variantOrFlavor.skip) {
                                 PrintUtils.print(module, "Skipping $variant")
+                                return@fingerPrint
+                            }
+
+                            if ("none" == key || key.trim().isEmpty()) {
+                                PrintUtils.print("No SHA1 key found for :$module:$variant")
                                 return@fingerPrint
                             }
 
@@ -115,6 +117,10 @@ open class StringCare : Plugin<Project> {
                         else -> {
                             val defaultConfiguration = defaultConfig().apply {
                                 name = module
+                            }
+                            if ("none" == key || key.trim().isEmpty()) {
+                                PrintUtils.print("No SHA1 key found for :$module:$variant")
+                                return@fingerPrint
                             }
                             PrintUtils.print(module, "$variant:$key")
                             PrintUtils.print(module, backupStringRes)
@@ -141,9 +147,6 @@ open class StringCare : Plugin<Project> {
             },
             mergeAssetsStart = { module, variant ->
                 fingerPrint(variantMap, module, variant, extension.debug) { key ->
-                    if ("none" == key) {
-                        return@fingerPrint
-                    }
                     when {
                         moduleMap.containsKey(module) -> {
                             val variantOrFlavor = extension.variants.find {
@@ -151,6 +154,11 @@ open class StringCare : Plugin<Project> {
                             }
                             if (variantOrFlavor != null && variantOrFlavor.skip) {
                                 PrintUtils.print(module, "Skipping $variant")
+                                return@fingerPrint
+                            }
+
+                            if ("none" == key || key.trim().isEmpty()) {
+                                PrintUtils.print("No SHA1 key found for :$module:$variant")
                                 return@fingerPrint
                             }
 

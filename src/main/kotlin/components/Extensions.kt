@@ -107,8 +107,8 @@ fun File.validForXMLConfiguration(configuration: Configuration): Boolean {
             }
         }
     }
-    if (configuration.debug && excludedForXML().not()) {
-        println("${if (valid) "✔ " else "❌  not"} valid file ${this.absolutePath}")
+    if (configuration.debug && excludedForXML().not() && valid) {
+        println("✔ valid file ${this.absolutePath}")
     }
     return valid
 }
@@ -131,8 +131,8 @@ fun File.validForAssetsConfiguration(configuration: Configuration): Boolean {
             }
         }
     }
-    if (configuration.debug && excludedForAssets().not()) {
-        println("${if (valid) "✔ " else "❌  not"} valid file ${this.absolutePath}")
+    if (configuration.debug && excludedForAssets().not() && valid) {
+        println("✔ valid file ${this.absolutePath}")
     }
     return valid
 }

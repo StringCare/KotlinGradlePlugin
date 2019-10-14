@@ -2,7 +2,7 @@ package components
 
 import java.io.File
 
-internal const val version = "3.5"
+internal const val version = "3.6"
 internal const val testProjectName = "KotlinSample"
 internal const val defaultDebug = false
 internal const val defaultMainModule = "app"
@@ -13,7 +13,7 @@ internal const val gradleTaskNameObfuscate = "stringcareTestObfuscate"
 internal const val extensionName = "stringcare"
 internal const val winLib = "libsignKey.dll"
 internal const val osxLib = "libsignKey.dylib"
-internal const val wrapperOsX = "./gradlew"
+internal const val wrapperOsX = "sh gradlew"
 internal const val wrapperWindows = "gradlew.bat"
 internal const val copyCommandOsX = "cp"
 internal const val copyCommandWindows = "copy"

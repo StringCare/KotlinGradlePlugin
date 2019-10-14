@@ -16,7 +16,7 @@ class PrintUtils {
         }
 
         private fun _print(value: String) {
-            logger.info(value)
+            println(value)
         }
 
         fun print(message: String, tab: Boolean = false) {

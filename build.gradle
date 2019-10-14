@@ -6,7 +6,7 @@ plugins {
 }
 
 group 'com.stringcare'
-version '3.5'
+version '3.6'
 
 def siteUrl = 'https://github.com/StringCare/KotlinGradlePlugin'
 def gitUrl = 'https://github.com/StringCare/KotlinGradlePlugin.git'
