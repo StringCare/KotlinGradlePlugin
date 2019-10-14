@@ -41,7 +41,7 @@ class SCTest {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
-            assert(report.extractFingerprint().split(":").size == 20)
+            assert(report.extractFingerprint(variant = "prodDebug").split(":").size == 20)
         }
     }
 
@@ -97,7 +97,7 @@ class SCTest {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
-            val key = report.extractFingerprint()
+            val key = report.extractFingerprint(variant = "prodDebug")
             println(key)
             assert(key.isNotEmpty())
             val files = locateResourceFiles("$temp${File.separator}$testProjectName", configuration)
@@ -121,7 +121,7 @@ class SCTest {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
-            val key = report.extractFingerprint()
+            val key = report.extractFingerprint(variant = "prodDebug")
             println(key)
             assert(key.isNotEmpty())
             val files = locateResourceFiles("$temp${File.separator}$testProjectName", configuration)

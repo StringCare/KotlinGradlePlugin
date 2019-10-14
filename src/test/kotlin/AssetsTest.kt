@@ -64,7 +64,7 @@ class AssetsTest {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
-            val key = report.extractFingerprint()
+            val key = report.extractFingerprint(variant = "prodDebug")
             println(key)
             assert(key.isNotEmpty())
             val files = locateAssetsFiles(
@@ -94,7 +94,7 @@ class AssetsTest {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
-            val key = report.extractFingerprint()
+            val key = report.extractFingerprint(variant = "prodDebug")
             println(key)
             assert(key.isNotEmpty())
             val files = locateAssetsFiles(
