@@ -49,7 +49,7 @@ internal fun basicGradleTask(directory: String): String {
 internal fun obfuscationTestGradleTask(directory: String): String {
     return """
         cd $directory &&
-        ${gradleWrapper()} ${gradleTaskNameObfuscate}Debug
+        ${gradleWrapper()} $gradleTaskNameObfuscate
         """.trimIndent()
 }
 

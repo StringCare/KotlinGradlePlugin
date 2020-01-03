@@ -7,9 +7,9 @@ import java.io.File
 
 class SCTest {
 
-    // private val logger by logger()
-
     private val configuration = defaultConfig().apply {
+        debug = true
+        applicationId = "com.stringcare.sample"
         stringFiles.add("strings_extra.xml")
         srcFolders.add("src/other_source")
     }
@@ -41,7 +41,7 @@ class SCTest {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
-            assert(report.extractFingerprint(variant = "prodDebug").split(":").size == 20)
+            assert(report.extractFingerprint(variant = "prodDebug", configuration = configuration).split(":").size == 20)
         }
     }
 
@@ -97,7 +97,7 @@ class SCTest {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
-            val key = report.extractFingerprint(variant = "prodDebug")
+            val key = report.extractFingerprint(variant = "prodDebug", configuration = configuration)
             println(key)
             assert(key.isNotEmpty())
             val files = locateResourceFiles("$temp${File.separator}$testProjectName", configuration)
@@ -105,10 +105,9 @@ class SCTest {
                 val entities = parseXML(file.file)
                 entities.forEach { entity ->
                     val obfuscated = obfuscateStringEntity(
-                        "$temp${File.separator}$mainModuleTest",
                         key,
                         entity,
-                        ""
+                        configuration.applicationId
                     )
                     assert(obfuscated.value != entity.value)
                 }
@@ -121,7 +120,7 @@ class SCTest {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
-            val key = report.extractFingerprint(variant = "prodDebug")
+            val key = report.extractFingerprint(variant = "prodDebug", configuration = configuration)
             println(key)
             assert(key.isNotEmpty())
             val files = locateResourceFiles("$temp${File.separator}$testProjectName", configuration)
@@ -129,16 +128,16 @@ class SCTest {
                 val entities = parseXML(file.file)
                 entities.forEach { entity ->
                     val obfuscated = obfuscateStringEntity(
-                        "$temp${File.separator}$mainModuleTest",
                         key,
-                        entity
+                        entity,
+                        configuration.applicationId
                     )
                     assert(obfuscated.value != entity.value)
 
                     val original = revealStringEntity(
-                        "$temp${File.separator}$mainModuleTest",
                         key,
-                        obfuscated
+                        obfuscated,
+                        configuration.applicationId
                     )
 
                     assert(
@@ -162,7 +161,7 @@ class SCTest {
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isNotEmpty())
-                modifyXML(file.file, "$temp${File.separator}$mainModuleTest", report.extractFingerprint(), true)
+                modifyXML(file.file, report.extractFingerprint(configuration = configuration), configuration)
             }
             val filesObfuscated = locateResourceFiles("$temp${File.separator}$testProjectName", configuration)
             filesObfuscated.forEach { file ->
@@ -182,7 +181,7 @@ class SCTest {
             files.forEach { file ->
                 val entities = parseXML(file.file)
                 assert(entities.isNotEmpty())
-                modifyXML(file.file, "$temp${File.separator}$mainModuleTest", report.extractFingerprint(), true)
+                modifyXML(file.file, report.extractFingerprint(configuration = configuration), configuration)
             }
             val filesObfuscated = locateResourceFiles("$temp${File.separator}$testProjectName", configuration)
             filesObfuscated.forEach { file ->
@@ -228,9 +227,8 @@ class SCTest {
                 assert(entities.isNotEmpty())
                 modifyXML(
                     file.file,
-                    "$temp${File.separator}$mainModuleTest",
-                    report.extractFingerprint(),
-                    true
+                    report.extractFingerprint(configuration = configuration),
+                    configuration
                 )
             }
             val filesObfuscated = locateResourceFiles(

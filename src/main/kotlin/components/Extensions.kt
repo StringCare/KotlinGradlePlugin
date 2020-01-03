@@ -1,10 +1,16 @@
 package components
 
 import StringCare
-import StringCare.*
+import StringCare.Configuration
+import StringCare.Extension
+import com.android.build.gradle.AppExtension
+import com.android.build.gradle.AppPlugin
+import com.android.build.gradle.api.ApplicationVariant
+import com.google.gson.Gson
 import groovy.json.StringEscapeUtils
 import models.AssetsFile
 import models.ResourceFile
+import org.gradle.api.DomainObjectSet
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.slf4j.Logger
@@ -245,40 +251,81 @@ fun File.assetsFile(configuration: Configuration): AssetsFile? {
     return if (valid) AssetsFile(validFile!!, sourceFolder, configuration.name) else null
 }
 
-fun Project.absolutePath(): String = this.file(wrapperWindows).absolutePath.replace(
-    wrapperWindows,
-    emptyChar
-)
-
-fun Project.createExtension(): Extension {
-    val extension = this.extensions.create(extensionName, Extension::class.java)
-    extension.modules = this.container(Configuration::class.java)
-    extension.variants = this.container(VariantApplicationId::class.java)
-
-    StringCare.mainModule = extension.main_module
-    StringCare.debug = extension.debug
-    return extension
+fun Project.absolutePath(): String {
+    val fPath = this.file("build.gradle").absolutePath.replace(
+        "build.gradle",
+        emptyChar
+    )
+    val p = fPath.split(File.separator)
+    return fPath.replace(p[p.size - 2] + File.separator, "")
 }
 
-fun Project.registerTask() {
-    this.tasks.addRule("Pattern: $gradleTaskNameObfuscate<variant>") { taskName ->
-        if (taskName.startsWith(gradleTaskNameObfuscate)) {
-            println("taskname $taskName")
-            task(taskName) {
-                it.doLast {
-                    val variant = taskName.replace(gradleTaskNameObfuscate, "").uncapitalize()
-                    println("variant $variant")
-                    val task = this.tasks.getByName(gradleTaskNameObfuscate) as SCTestObfuscation
-                    task.variant = variant
-                    task.module = StringCare.mainModule
-                    task.debug = StringCare.debug
-                    task.greet()
-                }
-            }
+fun Project.module(): String {
+    val fPath = this.file("build.gradle").absolutePath.replace(
+        "build.gradle",
+        emptyChar
+    )
+    val p = fPath.split(File.separator)
+    return p[p.size - 2]
+}
+
+fun Project.createExtension(): Extension {
+    return extensions.create(extensionName, Extension::class.java)
+}
+
+fun Project.applicationVariants(): DomainObjectSet<ApplicationVariant>? {
+    if (this.plugins.hasPlugin(AppPlugin::class.java)) {
+        val extension = this.extensions.getByType(AppExtension::class.java)
+        return extension.applicationVariants
+    }
+    return null
+}
+
+fun Project.config(extension: Extension): Configuration {
+    val mod = this.module()
+    return Configuration(mod).apply {
+        debug = extension.debug
+        skip = extension.skip
+        if (extension.srcFolders.isNotEmpty()) {
+            srcFolders.addAll(extension.srcFolders)
+        }
+        if (extension.stringFiles.isNotEmpty()) {
+            stringFiles.addAll(extension.stringFiles)
+        }
+        if (extension.assetsFiles.isNotEmpty()) {
+            assetsFiles.addAll(extension.assetsFiles)
+        }
+        if (extension.mockedFingerprint.isNotEmpty()) {
+            mockedFingerprint = extension.mockedFingerprint
         }
     }
+}
+
+fun Project.registerTask(configuration: Configuration) {
+    val gson = Gson()
+
     this.tasks.register(gradleTaskNameDoctor, SCPreview::class.java)
     this.tasks.register(gradleTaskNameObfuscate, SCTestObfuscation::class.java)
+
+    val previewTask = this.tasks.getByPath(gradleTaskNameDoctor) as SCPreview
+    previewTask.module = configuration.name
+    previewTask.applicationId = configuration.applicationId
+    previewTask.srcFolders = gson.toJson(configuration.srcFolders)
+    previewTask.stringFiles = gson.toJson(configuration.stringFiles)
+    previewTask.assetsFiles = gson.toJson(configuration.assetsFiles)
+    previewTask.mockedFingerprint = configuration.mockedFingerprint
+    previewTask.debug = configuration.debug
+    previewTask.skip = configuration.skip
+
+    val obfuscateTask = this.tasks.getByPath(gradleTaskNameObfuscate) as SCTestObfuscation
+    obfuscateTask.module = configuration.name
+    obfuscateTask.applicationId = configuration.applicationId
+    obfuscateTask.srcFolders = gson.toJson(configuration.srcFolders)
+    obfuscateTask.stringFiles = gson.toJson(configuration.stringFiles)
+    obfuscateTask.assetsFiles = gson.toJson(configuration.assetsFiles)
+    obfuscateTask.mockedFingerprint = configuration.mockedFingerprint
+    obfuscateTask.debug = configuration.debug
+    obfuscateTask.skip = configuration.skip
 }
 
 fun Process.outputString(): String {

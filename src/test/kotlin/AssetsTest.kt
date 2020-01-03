@@ -9,6 +9,7 @@ class AssetsTest {
 
     private val configuration = defaultConfig().apply {
         debug = true
+        applicationId = "com.stringcare.sample"
         stringFiles.add("strings_extra.xml")
         srcFolders.add("src/other_source")
     }
@@ -64,7 +65,7 @@ class AssetsTest {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
-            val key = report.extractFingerprint(variant = "prodDebug")
+            val key = report.extractFingerprint(variant = "prodDebug", configuration = configuration)
             println(key)
             assert(key.isNotEmpty())
             val files = locateAssetsFiles(
@@ -78,9 +79,9 @@ class AssetsTest {
                 val original = it.file.getContent()
                 println("original: \n $original")
                 obfuscateFile(
-                    "$temp${File.separator}$mainModuleTest",
                     key,
-                    it.file
+                    it.file,
+                    configuration.applicationId
                 )
                 val obfuscated = it.file.getContent()
                 println("obfuscated: \n $obfuscated")
@@ -94,7 +95,7 @@ class AssetsTest {
         val temp = tempPath()
         signingReportTask(temp).runCommand { _, report ->
             println(report)
-            val key = report.extractFingerprint(variant = "prodDebug")
+            val key = report.extractFingerprint(variant = "prodDebug", configuration = configuration)
             println(key)
             assert(key.isNotEmpty())
             val files = locateAssetsFiles(
@@ -108,17 +109,17 @@ class AssetsTest {
                 val original = it.file.getContent()
                 println("original: \n $original")
                 obfuscateFile(
-                    "$temp${File.separator}$mainModuleTest",
                     key,
-                    it.file
+                    it.file,
+                    configuration.applicationId
                 )
                 val obfuscated = it.file.getContent()
                 println("obfuscated: \n $obfuscated")
                 assert(original != obfuscated)
                 revealFile(
-                    "$temp${File.separator}$mainModuleTest",
                     key,
-                    it.file
+                    it.file,
+                    configuration.applicationId
                 )
                 val reveal = it.file.getContent()
                 println("reveal: \n $reveal")

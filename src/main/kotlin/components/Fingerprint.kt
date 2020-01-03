@@ -10,18 +10,18 @@ private class Fingerprint {
         private var moduleLocated = false
     }
 
-    fun extract(module: String, variant: String, debug: Boolean, trace: String): String {
+    fun extract(module: String, variant: String, configuration: StringCare.Configuration, trace: String): String {
         val lines = trace.split("\n")
         lines.forEach { line ->
             when {
-                line.toLowerCase().contains("downloading") -> if (debug) {
-                    PrintUtils.print(module, line, debug)
+                line.toLowerCase().contains("downloading") -> if (configuration.debug) {
+                    PrintUtils.print(module, line, configuration.debug)
                 }
-                line.toLowerCase().contains("unzipping") -> if (debug) {
-                    PrintUtils.print(module, line, debug)
+                line.toLowerCase().contains("unzipping") -> if (configuration.debug) {
+                    PrintUtils.print(module, line, configuration.debug)
                 }
-                line.toLowerCase().contains("permissions") -> if (debug) {
-                    PrintUtils.print(module, line, debug)
+                line.toLowerCase().contains("permissions") -> if (configuration.debug) {
+                    PrintUtils.print(module, line, configuration.debug)
                 }
                 line.toLowerCase().contains("config:") && moduleLocated && variantLocated -> {
                     val k = line.split(": ")[1].trim()
@@ -29,10 +29,10 @@ private class Fingerprint {
                     if (!valid) {
                         key = k
                         PrintUtils.print(module, "\uD83E\uDD2F no config defined for variant $variant", true)
-                        if (debug) {
+                        if (configuration.debug) {
                             until = key
                         }
-                    } else if (debug) {
+                    } else if (configuration.debug) {
                         PrintUtils.print(module, "Module: $module", true)
                         PrintUtils.print(module, "Variant: $variant", true)
                     }
@@ -40,8 +40,8 @@ private class Fingerprint {
                 }
                 line.toLowerCase().contains("sha1") && moduleLocated && variantLocated -> {
                     key = line.split(" ")[1]
-                    if (debug) {
-                        PrintUtils.print(module, line, debug)
+                    if (configuration.debug) {
+                        PrintUtils.print(module, line, configuration.debug)
                     }
                 }
                 line.toLowerCase().contains("error") -> {
@@ -49,12 +49,12 @@ private class Fingerprint {
                 }
                 line.toLowerCase().contains("valid until") && moduleLocated && variantLocated -> {
                     until = line.split(": ")[1]
-                    if (debug) {
-                        PrintUtils.print(module, line, debug)
+                    if (configuration.debug) {
+                        PrintUtils.print(module, line, configuration.debug)
                     }
                 }
-                line.toLowerCase().contains("store") && moduleLocated && variantLocated -> if (debug) {
-                    PrintUtils.print(module, line, debug)
+                line.toLowerCase().contains("store") && moduleLocated && variantLocated -> if (configuration.debug) {
+                    PrintUtils.print(module, line, configuration.debug)
                 }
                 line.toLowerCase().contains("variant") && moduleLocated -> {
                     val locV = line.split(" ")[1]
@@ -64,7 +64,7 @@ private class Fingerprint {
                 }
                 line.toLowerCase().contains(":$module") -> moduleLocated = true
             }
-            if (key != null && (!debug || debug && until != null)) {
+            if (key != null && (!configuration.debug || configuration.debug && until != null)) {
                 return key!!
             }
         }
@@ -76,26 +76,23 @@ private class Fingerprint {
  * Gets the signing report trace and extracts the fingerprint
  */
 fun fingerPrint(
-    variantMap: MutableMap<String, StringCare.VariantApplicationId>,
     module: String,
     variant: String,
-    debug: Boolean,
+    configuration: StringCare.Configuration,
     keyFound: (key: String) -> Unit
 ) {
-    if (variantMap.containsKey(variant)) {
-        if (variantMap[variant]!!.mockedFingerprint.isNotEmpty()) {
-            keyFound(variantMap[variant]!!.mockedFingerprint)
-            return
-        }
+    if (configuration.mockedFingerprint.isNotEmpty()) {
+        keyFound(configuration.mockedFingerprint)
+        return
     }
     signingReportTask().runCommand { _, report ->
-        keyFound(report.extractFingerprint(module, variant, debug))
+        keyFound(report.extractFingerprint(module, variant, configuration))
     }
 }
 
 /**
  * Returns the SHA1 fingerprint for the given trace
  */
-fun String.extractFingerprint(module: String = "app", variant: String = "debug", debug: Boolean = false): String {
-    return Fingerprint().extract(module, variant, debug, this)
+fun String.extractFingerprint(module: String = "app", variant: String = "debug", configuration: StringCare.Configuration): String {
+    return Fingerprint().extract(module, variant, configuration, this)
 }

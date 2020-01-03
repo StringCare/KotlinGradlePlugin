@@ -1,8 +1,7 @@
+
 import components.*
-import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.internal.plugins.DslObject
 
 open class StringCare : Plugin<Project> {
 
@@ -23,16 +22,11 @@ open class StringCare : Plugin<Project> {
         }
 
         @JvmStatic
-        internal val moduleMap: MutableMap<String, Configuration> = mutableMapOf()
+        internal var configuration: Configuration = defaultConfig()
 
         @JvmStatic
-        internal val variantMap: MutableMap<String, VariantApplicationId> = mutableMapOf()
+        internal var variantMap = mutableMapOf<String, String>()
 
-        @JvmStatic
-        internal var mainModule: String = defaultMainModule
-
-        @JvmStatic
-        internal var debug: Boolean = defaultDebug
     }
 
     private lateinit var project: Project
@@ -45,181 +39,115 @@ open class StringCare : Plugin<Project> {
         absoluteProjectPath = project.absolutePath()
 
         this.project.afterEvaluate {
-            extension.modules.forEach { module ->
-                moduleMap[module.name] = Configuration(module.name).apply {
-                    debug = extension.debug
-                }
-                if (module.srcFolders.isNotEmpty()) {
-                    moduleMap[module.name]!!.srcFolders.addAll(module.srcFolders)
-                }
-                if (module.stringFiles.isNotEmpty()) {
-                    moduleMap[module.name]!!.stringFiles.addAll(module.stringFiles)
-                }
-                if (module.assetsFiles.isNotEmpty()) {
-                    moduleMap[module.name]!!.assetsFiles.addAll(module.assetsFiles)
-                }
+            this.project.applicationVariants()?.forEach { variant ->
+                variantMap[variant.name] = variant.applicationId
+            }
+            configuration = this.project.config(extension)
 
-                if (moduleMap[module.name]!!.srcFolders.isEmpty()) {
-                    moduleMap[module.name]!!.srcFolders.addAll(defaultConfig().srcFolders)
-                }
-                if (moduleMap[module.name]!!.stringFiles.isEmpty()) {
-                    moduleMap[module.name]!!.stringFiles.addAll(defaultConfig().stringFiles)
-                }
+            if (configuration.debug) {
+                PrintUtils.print("PATH", absoluteProjectPath)
             }
-            extension.variants.forEach { variant ->
-                variantMap[variant.name] = VariantApplicationId(variant.name).apply {
-                    applicationId = variant.applicationId
-                    mockedFingerprint = variant.mockedFingerprint
-                    skip = variant.skip
-                }
-            }
-            this.project.registerTask()
+            this.project.registerTask(configuration)
         }
-        this.project.gradle.addBuildListener(ExecutionListener(
-            debug = extension.debug,
-            dataFound = { _, _ ->
-                // nothing to do here
-            },
-            mergeResourcesStart = { module, variant ->
-                fingerPrint(variantMap, module, variant, extension.debug) { key ->
-                    when {
-                        moduleMap.containsKey(module) -> {
-                            val variantOrFlavor = extension.variants.find {
-                                variant.toLowerCase().contains(it.name.toLowerCase())
-                            }
-                            if (variantOrFlavor != null && variantOrFlavor.skip) {
-                                PrintUtils.print(module, "Skipping $variant")
-                                return@fingerPrint
-                            }
-
-                            if ("none" == key || key.trim().isEmpty()) {
-                                PrintUtils.print("No SHA1 key found for :$module:$variant")
-                                return@fingerPrint
-                            }
-
-                            PrintUtils.print(module, "$variant:$key")
-                            PrintUtils.print(module, backupStringRes)
-                            moduleMap[module]?.let { configuration ->
-                                backupResourceFiles(absoluteProjectPath, configuration)
-                            }
-
-                            moduleMap[module]?.let { configuration ->
-                                val files = locateResourceFiles(absoluteProjectPath, configuration)
-                                files.forEach { file ->
-                                    modifyXML(
-                                        file.file, extension.main_module, key, extension.debug,
-                                        variantOrFlavor?.applicationId ?: ""
-                                    )
-                                }
-                            }
-                            PrintUtils.print(module, obfuscateStringRes)
+        this.project.gradle.addBuildListener(
+            ExecutionListener(
+                debug = configuration.debug,
+                dataFound = { _, _ ->
+                    // nothing to do here
+                },
+                mergeResourcesStart = { module, variant ->
+                    configuration.name = module
+                    if (variantMap.containsKey(variant)) {
+                        configuration.applicationId = variantMap[variant] ?: ""
+                    }
+                    PrintUtils.print("", "ApplicationId: ${configuration.applicationId}", tab = true)
+                    fingerPrint(module, variant, configuration) { key ->
+                        if (configuration.skip) {
+                            PrintUtils.print(module, "Skipping $variant")
+                            return@fingerPrint
                         }
-                        else -> {
-                            val defaultConfiguration = defaultConfig().apply {
-                                name = module
-                            }
-                            if ("none" == key || key.trim().isEmpty()) {
-                                PrintUtils.print("No SHA1 key found for :$module:$variant")
-                                return@fingerPrint
-                            }
-                            PrintUtils.print(module, "$variant:$key")
-                            PrintUtils.print(module, backupStringRes)
-                            backupResourceFiles(absoluteProjectPath, defaultConfiguration)
-                            PrintUtils.print(module, obfuscateStringRes)
-                            val files = locateResourceFiles(absoluteProjectPath, defaultConfiguration)
-                            files.forEach { file ->
-                                modifyXML(file.file, extension.main_module, key, extension.debug)
-                            }
+
+                        if ("none" == key || key.trim().isEmpty()) {
+                            PrintUtils.print("No SHA1 key found for :$module:$variant")
+                            return@fingerPrint
+                        }
+
+                        PrintUtils.print(module, "$variant:$key")
+                        PrintUtils.print(module, backupStringRes)
+                        backupResourceFiles(absoluteProjectPath, configuration)
+
+
+                        val files = locateResourceFiles(absoluteProjectPath, configuration)
+                        files.forEach { file ->
+                            modifyXML(file.file, key, configuration)
                         }
                     }
-                }
-
-            },
-            mergeResourcesFinish = { module, variant ->
-                PrintUtils.print(module, restoreStringRes)
-                val variantOrFlavor = extension.variants.find {
-                    variant.toLowerCase().contains(it.name.toLowerCase())
-                }
-                if (variantOrFlavor != null && variantOrFlavor.skip) {
-                    return@ExecutionListener
-                }
-                restoreResourceFiles(absoluteProjectPath, module)
-            },
-            mergeAssetsStart = { module, variant ->
-                fingerPrint(variantMap, module, variant, extension.debug) { key ->
-                    when {
-                        moduleMap.containsKey(module) -> {
-                            val variantOrFlavor = extension.variants.find {
-                                variant.toLowerCase().contains(it.name.toLowerCase())
-                            }
-                            if (variantOrFlavor != null && variantOrFlavor.skip) {
-                                PrintUtils.print(module, "Skipping $variant")
-                                return@fingerPrint
-                            }
-
-                            if ("none" == key || key.trim().isEmpty()) {
-                                PrintUtils.print("No SHA1 key found for :$module:$variant")
-                                return@fingerPrint
-                            }
-
-                            PrintUtils.print(module, "$variant:$key")
-                            PrintUtils.print(module, backupAssets)
-                            moduleMap[module]?.let { configuration ->
-                                backupAssetsFiles(absoluteProjectPath, configuration)
-                            }
-
-                            moduleMap[module]?.let { configuration ->
-                                val files = locateAssetsFiles(absoluteProjectPath, configuration)
-                                files.forEach { file ->
-                                    if (extension.debug) {
-                                        PrintUtils.print(null, file.file.getContent())
-                                    }
-                                    obfuscateFile(
-                                        extension.main_module,
-                                        key,
-                                        file.file,
-                                        variantOrFlavor?.applicationId ?: ""
-                                    )
-                                    if (extension.debug) {
-                                        PrintUtils.print(null, file.file.getContent())
-                                    }
-                                }
-                            }
-                            PrintUtils.print(module, obfuscateAssets)
-                        }
+                    PrintUtils.print(module, obfuscateStringRes)
+                },
+                mergeResourcesFinish = { module, _ ->
+                    if (configuration.skip) {
+                        return@ExecutionListener
                     }
+                    PrintUtils.print(module, restoreStringRes)
+                    restoreResourceFiles(absoluteProjectPath, module)
+                },
+                mergeAssetsStart = { module, variant ->
+                    configuration.name = module
+                    if (variantMap.containsKey(variant)) {
+                        configuration.applicationId = variantMap[variant] ?: ""
+                    }
+                    PrintUtils.print("", "ApplicationId: ${configuration.applicationId}", tab = true)
+                    fingerPrint(module, variant, configuration) { key ->
+                        if (configuration.skip) {
+                            PrintUtils.print(module, "Skipping $variant")
+                            return@fingerPrint
+                        }
+
+                        if ("none" == key || key.trim().isEmpty()) {
+                            PrintUtils.print("No SHA1 key found for :$module:$variant")
+                            return@fingerPrint
+                        }
+
+                        PrintUtils.print(module, "$variant:$key")
+                        PrintUtils.print(module, backupAssets)
+                        backupAssetsFiles(absoluteProjectPath, configuration)
+
+
+                        val files = locateAssetsFiles(absoluteProjectPath, configuration)
+                        files.forEach { file ->
+                            if (configuration.debug) {
+                                PrintUtils.print(null, file.file.getContent())
+                            }
+                            obfuscateFile(
+                                key,
+                                file.file,
+                                configuration.applicationId
+                            )
+                            if (configuration.debug) {
+                                PrintUtils.print(null, file.file.getContent())
+                            }
+                        }
+                        PrintUtils.print(module, obfuscateAssets)
+                    }
+                },
+                mergeAssetsFinish = { module, _ ->
+                    if (configuration.skip) {
+                        return@ExecutionListener
+                    }
+                    PrintUtils.print(module, restoreAssets)
+                    restoreAssetsFiles(absoluteProjectPath, module)
                 }
 
-            },
-            mergeAssetsFinish = { module, variant ->
-                PrintUtils.print(module, restoreAssets)
-                val variantOrFlavor = extension.variants.find {
-                    variant.toLowerCase().contains(it.name.toLowerCase())
-                }
-                if (variantOrFlavor != null && variantOrFlavor.skip) {
-                    return@ExecutionListener
-                }
-                restoreAssetsFiles(absoluteProjectPath, module)
-            }
-
-        ))
+            ))
     }
 
     open class Extension {
-        var debug: Boolean = false
-        var main_module: String = "app"
-        var modules: NamedDomainObjectContainer<Configuration>
-            @Suppress("UNCHECKED_CAST")
-            get() = DslObject(this).extensions.getByName("modules") as NamedDomainObjectContainer<Configuration>
-            internal set(value) {
-                DslObject(this).extensions.add("modules", value)
-            }
-        var variants: NamedDomainObjectContainer<VariantApplicationId>
-            @Suppress("UNCHECKED_CAST")
-            get() = DslObject(this).extensions.getByName("variants") as NamedDomainObjectContainer<VariantApplicationId>
-            internal set(value) {
-                DslObject(this).extensions.add("variants", value)
-            }
+        var assetsFiles = mutableListOf<String>()
+        var stringFiles = mutableListOf<String>()
+        var srcFolders = mutableListOf<String>()
+        var debug = false
+        var skip = false
+        var mockedFingerprint = ""
     }
 
     open class Configuration(var name: String) {
@@ -227,12 +155,9 @@ open class StringCare : Plugin<Project> {
         var stringFiles = mutableListOf<String>()
         var srcFolders = mutableListOf<String>()
         var debug = false
-    }
-
-    open class VariantApplicationId(var name: String) {
+        var skip = false
         var applicationId = ""
         var mockedFingerprint = ""
-        var skip = false
     }
 
 }
