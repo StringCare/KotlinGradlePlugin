@@ -6,7 +6,7 @@ plugins {
 }
 
 group 'com.stringcare'
-version '3.6.3'
+version '3.6.4'
 
 def siteUrl = 'https://github.com/StringCare/KotlinGradlePlugin'
 def gitUrl = 'https://github.com/StringCare/KotlinGradlePlugin.git'
@@ -14,11 +14,14 @@ def gitUrl = 'https://github.com/StringCare/KotlinGradlePlugin.git'
 sourceCompatibility = 1.8
 
 repositories {
+    google()
+    jcenter()
     mavenCentral()
 }
 
 dependencies {
     implementation gradleApi()
+    implementation group: 'com.android.tools.build', name: 'gradle', version: '3.5.3'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation group: 'com.google.guava', name: 'guava', version: '28.0-jre'
     testCompile group: 'junit', name: 'junit', version: '4.12'

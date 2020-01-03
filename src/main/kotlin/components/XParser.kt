@@ -1,6 +1,7 @@
 package components
 
-import StringCare.*
+import StringCare
+import StringCare.Configuration
 import models.ResourceFile
 import models.SAttribute
 import models.StringEntity
@@ -80,9 +81,9 @@ fun parseXML(file: File): List<StringEntity> {
     return entities
 }
 
-fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean, mockId: String = "") {
+fun modifyXML(file: File, key: String, configuration: Configuration) {
     val stringEntities = parseXML(file)
-    if (debug) {
+    if (configuration.debug) {
         PrintUtils.print(null, file.getContent(), true)
     }
 
@@ -94,20 +95,19 @@ fun modifyXML(file: File, mainModule: String, key: String, debug: Boolean, mockI
             it.tag == "string" && it.index == i
         }
         entity?.let {
-            node.textContent = obfuscateStringEntity(mainModule, key, it, mockId).value
+            node.textContent = obfuscateStringEntity(key, it, configuration.applicationId).value
         }
     }
 
     file.updateXML(doc)
     file.removeAttributes()
-    if (debug) {
+    if (configuration.debug) {
         PrintUtils.print(null, file.getContent(), true)
     }
 }
 
-fun obfuscateStringEntity(mainModule: String, key: String, entity: StringEntity, mockId: String = ""): StringEntity {
-    val obfuscation = Stark.obfuscate(
-        mainModule, key, when (entity.androidTreatment) {
+fun obfuscateStringEntity(key: String, entity: StringEntity, mockId: String): StringEntity {
+    val obfuscation = Stark.obfuscate(key, when (entity.androidTreatment) {
             true -> entity.value.androidTreatment()
             false -> entity.value.unescape()
         }.toByteArray(),
@@ -116,9 +116,9 @@ fun obfuscateStringEntity(mainModule: String, key: String, entity: StringEntity,
     return StringEntity(entity.name, entity.attributes, obfuscation, entity.tag, entity.index, entity.androidTreatment)
 }
 
-fun revealStringEntity(mainModule: String, key: String, entity: StringEntity, mockId: String = ""): StringEntity {
+fun revealStringEntity(key: String, entity: StringEntity, mockId: String): StringEntity {
     val arr: ByteArray = entity.value.split(", ").map { it.toInt().toByte() }.toByteArray()
-    val original = String(Stark.reveal(mainModule, key, arr, mockId))
+    val original = String(Stark.reveal(key, arr, mockId))
     return StringEntity(entity.name, entity.attributes, original, entity.tag, entity.index, entity.androidTreatment)
 }
 

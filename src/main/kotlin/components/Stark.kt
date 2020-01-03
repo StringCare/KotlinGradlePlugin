@@ -1,5 +1,6 @@
 package components
 
+import StringCare
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipFile
@@ -66,10 +67,10 @@ open class Stark {
         }
 
         @JvmStatic
-        external fun obfuscate(mainModule: String, key: String, value: ByteArray, mockId: String): ByteArray
+        external fun obfuscate(key: String, value: ByteArray, mockId: String): ByteArray
 
         @JvmStatic
-        external fun reveal(mainModule: String, key: String, value: ByteArray, mockId: String): ByteArray
+        external fun reveal(key: String, value: ByteArray, mockId: String): ByteArray
     }
 
 }

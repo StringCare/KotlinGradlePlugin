@@ -1,8 +1,8 @@
 package components
 
-import StringCare.*
+import StringCare
+import StringCare.Configuration
 import models.AssetsFile
-import models.ResourceFile
 import java.io.File
 
 fun locateAssetsFiles(projectPath: String, configuration: Configuration): List<AssetsFile> {
@@ -36,9 +36,8 @@ fun restoreAssetsFiles(projectPath: String, module: String): List<File> {
     return resourceFiles
 }
 
-fun obfuscateFile(mainModule: String, key: String, file: File, mockId: String = "") {
+fun obfuscateFile(key: String, file: File, mockId: String) {
     val obfuscation = Stark.obfuscate(
-        mainModule,
         key,
         file.readBytes(),
         mockId
@@ -46,6 +45,6 @@ fun obfuscateFile(mainModule: String, key: String, file: File, mockId: String = 
     file.writeBytes(obfuscation)
 }
 
-fun revealFile(mainModule: String, key: String, file: File, mockId: String = "") {
-    file.writeBytes(Stark.reveal(mainModule, key, file.readBytes(), mockId))
+fun revealFile(key: String, file: File, mockId: String = "") {
+    file.writeBytes(Stark.reveal(key, file.readBytes(), mockId))
 }

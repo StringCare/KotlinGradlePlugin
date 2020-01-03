@@ -1,7 +1,8 @@
 package task
 
+import StringCare
 import StringCare.Companion.absoluteProjectPath
-import StringCare.Companion.moduleMap
+import com.google.gson.Gson
 import components.*
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
@@ -10,48 +11,83 @@ import org.gradle.api.tasks.TaskAction
 open class SCTestObfuscation : DefaultTask() {
 
     @Input
-    var variant: String? = null
+    var module = String()
 
     @Input
-    var module: String? = null
+    var assetsFiles = String()
 
     @Input
-    var debug: Boolean? = null
+    var stringFiles = String()
+
+    @Input
+    var srcFolders = String()
+
+    @Input
+    var debug = false
+
+    @Input
+    var skip = false
+
+    @Input
+    var applicationId = ""
+
+    @Input
+    var mockedFingerprint = ""
 
     @TaskAction
     fun greet() {
         println("== TEST OBFUSCATION ======================================")
-        println("Modules (${moduleMap.size})")
+        var key = ""
+        val gson = Gson()
 
-        moduleMap.forEach { entry ->
-            var key = ""
-            signingReportTask().runCommand { _, result ->
-                key = result.extractFingerprint(entry.value.name, variant ?: defaultVariant, debug ?: defaultDebug)
+        val task = this
+        project.applicationVariants()?.forEach { variant ->
+            println("\t== ${variant.name} ======================================")
+            val configuration = StringCare.Configuration(module).apply {
+                val lSrcFolders = gson.fromJson(task.srcFolders, MutableList::class.java)
+                if (task.srcFolders.isNotEmpty()) {
+                    srcFolders.addAll(lSrcFolders as MutableList<String>)
+                }
+                val lStringFiles = gson.fromJson(task.stringFiles, MutableList::class.java)
+                if (task.stringFiles.isNotEmpty()) {
+                    stringFiles.addAll(lStringFiles as MutableList<String>)
+                }
+                val lAssetsFiles = gson.fromJson(task.assetsFiles, MutableList::class.java)
+                if (task.assetsFiles.isNotEmpty()) {
+                    assetsFiles.addAll(lAssetsFiles as MutableList<String>)
+                }
+                if (task.mockedFingerprint.isNotEmpty()) {
+                    mockedFingerprint = task.mockedFingerprint
+                }
+                applicationId = variant.applicationId
+                skip = task.skip
+                debug = task.debug
             }
-            println("fingerprint: $key")
-            println("variant: ${variant ?: "debug"}")
-            val filesToObfuscate = backupResourceFiles(absoluteProjectPath, entry.value)
+            signingReportTask().runCommand { _, result ->
+                key = result.extractFingerprint(module, variant.name, configuration)
+            }
+            val filesToObfuscate = backupResourceFiles(absoluteProjectPath, configuration)
             filesToObfuscate.forEach { file ->
                 val originalEntities = parseXML(file.file)
-                println("============================")
-                println("path: ${file.file.absolutePath}")
+                println("\t============================")
+                println("\tpath: ${file.file.absolutePath}")
                 originalEntities.forEach { entity ->
                     entity.attributes.forEach { attribute ->
                         println("\"${attribute.name}\": \"${attribute.value}\"")
                     }
-                    println("\"value\": \"${entity.value}\"")
-                    println("============================")
+                    println("\"\tvalue\": \"${entity.value}\"")
+                    println("\t============================")
                 }
                 println("")
-                println("=== content ================")
+                println("\t=== content ================")
                 println(file.file.getContent())
-                println("============================")
-                modifyXML(file.file, module!!, key, true)
-                println("=== content obfuscated ================")
+                println("\t============================")
+                modifyXML(file.file, key, configuration)
+                println("\t=== content obfuscated ================")
                 println(file.file.getContent())
-                println("============================")
+                println("\t============================")
             }
-            restoreResourceFiles(absoluteProjectPath, entry.value.name)
+            restoreResourceFiles(absoluteProjectPath, module)
         }
         println("== END OBFUSCATION ==================================")
 
