@@ -1,6 +1,6 @@
 package components
 
-internal const val version = "4.0.0"
+internal const val version = "4.0.1"
 internal const val testProjectName = "KotlinSample"
 internal const val defaultMainModule = "app"
 internal const val gradleTaskNameDoctor = "stringcarePreview"
