@@ -1,12 +1,9 @@
 plugins {
     id 'java'
-    id 'com.jfrog.bintray' version '1.8.5'
     id 'org.jetbrains.kotlin.jvm' version '1.4.0'
-    id "com.github.dcendents.android-maven" version "2.1"
+    id 'maven-publish'
+    id 'signing'
 }
-
-group 'com.stringcare'
-version '4.0.1'
 
 def siteUrl = 'https://github.com/StringCare/KotlinGradlePlugin'
 def gitUrl = 'https://github.com/StringCare/KotlinGradlePlugin.git'
@@ -15,7 +12,6 @@ sourceCompatibility = 1.8
 
 repositories {
     google()
-    jcenter()
     mavenCentral()
 }
 
@@ -35,51 +31,59 @@ compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
 
-install {
-    repositories.mavenInstaller {
-        pom {
-            project {
-                packaging 'aar'
-                name 'StringCareAndroidPlugin'
-                url siteUrl
-                // Set your license
+group = "io.github.stringcare"
+version = "4.2.1"
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+publishing {
+    publications {
+        plugin(MavenPublication) {
+            from components.java
+            artifactId = "plugin"
+            pom {
+                packaging = 'aar'
+                name = 'StringCareAndroidPlugin'
+                description = "Stringcare Android library"
+                url = siteUrl
+                scm {
+                    connection = gitUrl
+                    developerConnection = gitUrl
+                    url = siteUrl
+                }
                 licenses {
                     license {
-                        name 'The Apache Software License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                     }
                 }
                 developers {
                     developer {
-                        id 'efraespada'
-                        name 'efraespada'
-                        email 'efraespada@gmail.com'
+                        id = 'efraespada'
+                        name = 'efraespada'
+                        email = 'efraespada@gmail.com'
                     }
                 }
-                scm {
-                    connection gitUrl
-                    developerConnection gitUrl
-                    url siteUrl
-                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            //def releaseRepo = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            // def snapshotRepo = "https://oss.sonatype.org/content/repositories/snapshots/"
+            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            credentials {
+                username = properties["nexusUsername"]
+                password = properties["nexusPassword"]
             }
         }
     }
 }
 
-Properties properties = new Properties()
-properties.load(project.rootProject.file('local.properties').newDataInputStream())
-bintray {
-    user = properties.getProperty("bintrayUser")
-    key = properties.getProperty("bintrayApiKey")
-    configurations = ['archives']
-    pkg {
-        repo = "maven"
-        name = "StringCareAndroidPlugin"
-        websiteUrl = siteUrl
-        vcsUrl = gitUrl
-        licenses = ["Apache-2.0"]
-        publish = true
-    }
+signing {
+    useGpgCmd()
+    sign publishing.publications.plugin
 }
 
 processResources {
