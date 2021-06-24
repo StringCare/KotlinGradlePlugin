@@ -1,4 +1,4 @@
-[![version][badge]][link]
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.stringcare/plugin.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22io.github.stringcare%22%20AND%20a:%22plugin%22)
 
 #### [Wiki](https://github.com/StringCare/AndroidLibrary/wiki)
 
